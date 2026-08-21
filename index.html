@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Ledger | Zero-Dependency Book Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 3px solid #f3f4f6;
+            border-radius: 50%;
+            border-top: 3px solid #6366f1;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 300ms ease-in-out; }
+        .toast-exit { transform: translateY(0); opacity: 1; }
+        .toast-exit-active { transform: translateY(100%); opacity: 0; transition: all 300ms ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col items-center py-10 px-4">
+
+    <main class="w-full max-w-4xl bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Left Column: Search & Input -->
+        <section class="w-full md:w-1/3 bg-slate-900 text-white p-8 flex flex-col gap-6">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight mb-1">Library Ledger</h1>
+                <p class="text-slate-400 text-sm">Zero-dependency book retrieval.</p>
+            </div>
+
+            <form id="search-form" class="flex flex-col gap-4">
+                <div class="flex gap-4 border-b border-slate-700 pb-4">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="radio" name="search-type" value="isbn" checked class="text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-600">
+                        <span>ISBN</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="radio" name="search-type" value="title" class="text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-600">
+                        <span>Title & Author</span>
+                    </label>
+                </div>
+
+                <div id="isbn-input-group" class="flex flex-col gap-2">
+                    <label for="isbn" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ISBN Number</label>
+                    <input type="text" id="isbn" placeholder="e.g. 9780439708180" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors text-white">
+                </div>
+
+                <div id="title-input-group" class="flex flex-col gap-4 hidden">
+                    <div class="flex flex-col gap-2">
+                        <label for="title" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Book Title</label>
+                        <input type="text" id="title" placeholder="e.g. Dune" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors text-white">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="author" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Author (Optional)</label>
+                        <input type="text" id="author" placeholder="e.g. Frank Herbert" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors text-white">
+                    </div>
+                </div>
+
+                <button type="submit" class="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <span>Search Database</span>
+                    <div id="search-spinner" class="loader hidden"></div>
+                </button>
+            </form>
+
+            <div id="staging-area" class="mt-auto hidden border border-slate-700 bg-slate-800 rounded-lg p-4">
+                <h3 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">Ready to Save</h3>
+                <div id="staged-book-details" class="text-sm space-y-1 mb-4">
+                    <!-- Injected via JS -->
+                </div>
+                <button id="btn-save-book" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
+                    Commit to Ledger
+                </button>
+            </div>
+        </section>
+
+        <section class="w-full md:w-2/3 p-8 flex flex-col bg-white">
+            <div class="flex justify-between items-end mb-6 border-b border-slate-100 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Current Ledger</h2>
+                    <p class="text-slate-500 text-sm">In-memory session storage.</p>
+                </div>
+                <button id="btn-export" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export CSV
+                </button>
+            </div>
+
+            <!-- The List -->
+            <div class="flex-grow overflow-auto">
+                <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 pt-10">
+                    <svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <p>Your ledger is empty. Search to begin.</p>
+                </div>
+                
+                <ul id="ledger-list" class="space-y-3 hidden">
+                    <!-- List items injected via JS -->
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
+
+    <script>
+        // State & IndexedDB Setup
+        let ledger = [];
+        let currentlyStagedBook = null;
+        let db;
+
+        const request = indexedDB.open("LibraryLedgerDB", 1);
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains("books")) {
+                db.createObjectStore("books", { keyPath: "id" });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            loadLedger();
+        };
+
+        request.onerror = (event) => {
+            console.error("IndexedDB error:", event.target.error);
+            showToast("Failed to connect to local database.", "error");
+        };
+
+        function loadLedger() {
+            const transaction = db.transaction(["books"], "readonly");
+            const store = transaction.objectStore("books");
+            const getAllRequest = store.getAll();
+
+            getAllRequest.onsuccess = () => {
+                ledger = getAllRequest.result;
+                updateLedgerUI();
+            };
+        }
+
+        // DOM Elements
+        const form = document.getElementById('search-form');
+        const searchRadios = document.getElementsByName('search-type');
+        const isbnGroup = document.getElementById('isbn-input-group');
+        const titleGroup = document.getElementById('title-input-group');
+        const isbnInput = document.getElementById('isbn');
+        const titleInput = document.getElementById('title');
+        const authorInput = document.getElementById('author');
+        const spinner = document.getElementById('search-spinner');
+        const stagingArea = document.getElementById('staging-area');
+        const stagedDetails = document.getElementById('staged-book-details');
+        const saveBtn = document.getElementById('btn-save-book');
+        const emptyState = document.getElementById('empty-state');
+        const ledgerList = document.getElementById('ledger-list');
+        const exportBtn = document.getElementById('btn-export');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Toggle input fields based on radio selection
+        searchRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'isbn') {
+                    isbnGroup.classList.remove('hidden');
+                    titleGroup.classList.add('hidden');
+                } else {
+                    isbnGroup.classList.add('hidden');
+                    titleGroup.classList.remove('hidden');
+                }
+            });
+        });
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                error: 'bg-red-500 text-white',
+                success: 'bg-emerald-500 text-white',
+                info: 'bg-slate-800 text-white'
+            };
+            
+            toast.className = `px-4 py-3 rounded shadow-lg text-sm font-medium ${colors[type]} toast-enter`;
+            toast.textContent = message;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-enter-active');
+            });
+
+            // Auto-remove
+            setTimeout(() => {
+                toast.classList.add('toast-exit-active');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const searchType = document.querySelector('input[name="search-type"]:checked').value;
+            let query = '';
+
+            if (searchType === 'isbn') {
+                const isbn = isbnInput.value.replace(/[- ]/g, ''); // Clean formatting
+                if (!isbn) return showToast('Please enter an ISBN', 'error');
+                query = `isbn:${isbn}`;
+            } else {
+                const title = titleInput.value.trim();
+                const author = authorInput.value.trim();
+                if (!title) return showToast('Please enter a Title', 'error');
+                query = `intitle:${encodeURIComponent(title)}`;
+                if (author) query += `+inauthor:${encodeURIComponent(author)}`;
+            }
+
+            // UI Loading State
+            spinner.classList.remove('hidden');
+            stagingArea.classList.add('hidden');
+            currentlyStagedBook = null;
+
+            try {
+                // We use Google Books API as it's highly reliable, CORS friendly, and requires no key for basic queries.
+                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+                const data = await response.json();
+
+                if (data.totalItems === 0 || !data.items) {
+                    showToast('No books found for this query.', 'error');
+                    return;
+                }
+
+                // Extract the most relevant data
+                const volumeInfo = data.items[0].volumeInfo;
+                
+                // Find ISBN 13 or 10
+                let parsedIsbn = 'N/A';
+                if (volumeInfo.industryIdentifiers) {
+                    const isbn13 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_13');
+                    const isbn10 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_10');
+                    parsedIsbn = isbn13 ? isbn13.identifier : (isbn10 ? isbn10.identifier : 'N/A');
+                }
+
+                currentlyStagedBook = {
+                    id: Date.now().toString(),
+                    title: volumeInfo.title || 'Unknown Title',
+                    author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author',
+                    isbn: parsedIsbn,
+                    publishedYear: volumeInfo.publishedDate ? volumeInfo.publishedDate.substring(0,4) : 'Unknown',
+                    pages: volumeInfo.pageCount || 'Unknown'
+                };
+
+                stageBook(currentlyStagedBook);
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                showToast('Network error while communicating with the API.', 'error');
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        });
+
+        function stageBook(book) {
+            stagedDetails.innerHTML = `
+                <p><span class="text-slate-400">Title:</span> <span class="font-medium text-white">${book.title}</span></p>
+                <p><span class="text-slate-400">Author:</span> <span class="text-slate-200">${book.author}</span></p>
+                <p><span class="text-slate-400">ISBN:</span> <span class="text-slate-200">${book.isbn}</span></p>
+                <p><span class="text-slate-400">Year:</span> <span class="text-slate-200">${book.publishedYear}</span></p>
+            `;
+            stagingArea.classList.remove('hidden');
+        }
+
+        saveBtn.addEventListener('click', () => {
+            if (!currentlyStagedBook) return;
+            
+            // Check for duplicates
+            const isDuplicate = ledger.some(b => b.isbn !== 'N/A' && b.isbn === currentlyStagedBook.isbn);
+            if (isDuplicate) {
+                showToast('This book is already in your ledger.', 'info');
+                return;
+            }
+
+            const transaction = db.transaction(["books"], "readwrite");
+            const store = transaction.objectStore("books");
+            const addRequest = store.add(currentlyStagedBook);
+
+            addRequest.onsuccess = () => {
+                ledger.push(currentlyStagedBook);
+                updateLedgerUI();
+                showToast('Book committed to local database.', 'success');
+                
+                // Reset staging area
+                stagingArea.classList.add('hidden');
+                currentlyStagedBook = null;
+                isbnInput.value = '';
+                titleInput.value = '';
+                authorInput.value = '';
+            };
+
+            addRequest.onerror = () => {
+                showToast('Error saving to database.', 'error');
+            };
+        });
+
+        function updateLedgerUI() {
+            if (ledger.length === 0) {
+                emptyState.classList.remove('hidden');
+                ledgerList.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            ledgerList.classList.remove('hidden');
+            ledgerList.innerHTML = '';
+
+            ledger.forEach(book => {
+                const li = document.createElement('li');
+                li.className = "p-4 border border-slate-100 rounded-lg flex justify-between items-center bg-slate-50 hover:bg-slate-100 transition-colors";
+                
+                li.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-slate-800">${book.title}</h4>
+                        <p class="text-sm text-slate-500">${book.author} &bull; ${book.publishedYear} &bull; ISBN: ${book.isbn}</p>
+                    </div>
+                    <button onclick="removeBook('${book.id}')" class="text-red-400 hover:text-red-600 p-2 transition-colors" title="Remove">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                ledgerList.appendChild(li);
+            });
+        }
+
+        window.removeBook = function(id) {
+            const transaction = db.transaction(["books"], "readwrite");
+            const store = transaction.objectStore("books");
+            const deleteRequest = store.delete(id);
+
+            deleteRequest.onsuccess = () => {
+                ledger = ledger.filter(b => b.id !== id);
+                updateLedgerUI();
+                showToast('Book removed from database.', 'info');
+            };
+
+            deleteRequest.onerror = () => {
+                showToast('Error removing book.', 'error');
+            };
+        }
+
+        exportBtn.addEventListener('click', () => {
+            if (ledger.length === 0) {
+                showToast('Nothing to export. Add books first.', 'error');
+                return;
+            }
+
+            // Define CSV headers
+            const headers = ['Title', 'Author', 'ISBN', 'Published Year', 'Pages'];
+            
+            // Map ledger data to rows, escaping quotes to preserve CSV integrity
+            const rows = ledger.map(book => [
+                `"${book.title.replace(/"/g, '""')}"`,
+                `"${book.author.replace(/"/g, '""')}"`,
+                `"${book.isbn}"`,
+                `"${book.publishedYear}"`,
+                `"${book.pages}"`
+            ].join(','));
+
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            
+            // Create a Blob and trigger a download via temporary anchor tag
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `library_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Spreadsheet exported successfully.', 'success');
+        });
+
+    </script>
+</body>
+</html>
