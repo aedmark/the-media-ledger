@@ -22,9 +22,12 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
   string cannot be made safe by HTML escaping (that also finished P4-03). Evidence: a stored record with
   `<img onerror>` in every field and a quote-breaking id rendered as text and executed nothing; with the fix
   stashed, the same check executed the payload. Chromium (built-in browser), 2026-10-03
-- [ ] P1-03 Guard CSV export against spreadsheet formula injection: prefix cells beginning with `=`, `+`, `-`, `@`
+- [x] P1-03 Guard CSV export against spreadsheet formula injection: prefix cells beginning with `=`, `+`, `-`, `@`
   with `'`. Done when such a title opens as text in a spreadsheet. Found by code reading (2026-10-03). Test written
-  ahead of the fix: `test_export_neutralises_spreadsheet_formulas`, marked `xfail(strict=True)`
+  ahead of the fix: `test_export_neutralises_spreadsheet_formulas`, marked `xfail(strict=True)`. Done: every cell
+  goes through `csvCell()`, which also prefixes tab and carriage return (OWASP's list) and now doubles quotes in the
+  ISBN, year, and pages cells too, which were not escaped before. Evidence: 50 passed in Chromium and Firefox, three
+  runs; without the prefix 7 tests fail, without quote doubling 1 fails (2026-10-03)
 - [ ] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
   IndexedDB; the title says "Zero-Dependency" but the page loads Tailwind and Google Fonts from CDNs. Drop the false
   wording (D-004). Found by code reading (2026-10-03)

@@ -23,7 +23,7 @@ fix before public disclosure.
 | The user's ledger | Reading habits are personal; script injection could read or wipe it | Stays in the browser's IndexedDB; nothing uploads it | storage code |
 | Open Library reply | Untrusted text rendered into the page: script injection (stored, since it is saved) | `escapeHTML()` on every field in `stageBook()` and `updateLedgerUI()`; no inline handlers (P1-02) | rendering code |
 | Search query | Disclosed to Open Library (Internet Archive) | Inherent to D-008; documented in README | search handler |
-| CSV export | Formula injection when opened in a spreadsheet | Quotes doubled; formulas not neutralised (P1-03) | export handler |
+| CSV export | Formula injection when opened in a spreadsheet | `csvCell()`: quotes doubled; formula triggers prefixed with `'` (P1-03) | export handler |
 | CDN scripts | A compromised CDN runs code with full page access | Unpinned, no Subresource Integrity; pin with the next dependency proposal (D-004) | maintainer |
 
 Architecture details belong in [ARCHITECTURE.md](ARCHITECTURE.md); this table records the security consequence.

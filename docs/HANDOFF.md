@@ -14,48 +14,44 @@ Changes: [CHANGELOG.md](CHANGELOG.md). Older sessions: [archive/](archive/README
 
 ## Current state
 
-_Last updated: 2026-10-03, session 5, on `fix/open-library`, stacked on `test/playwright-suite` (PR #3), which is
-stacked on `fix/search-errors` (PR #2): P1-06 and P4-04 done, pull request open. Merge #2, #3, then this one._
+_Last updated: 2026-10-03, session 6, on `fix/csv-formulas` (from `main` at `7c3348f`, which has P1-02 to P1-06 and
+P4-01): P1-03 done, pull request open for review._
 
-**Where things stand, in one paragraph:** Search works again. Google Books gives keyless requests a quota of 0 per
-day, so search had been broken for everyone; the app now uses Open Library (D-008), and real searches succeed. An
-automated suite covers the whole smoke test in Chromium and Firefox on recorded Open Library replies. Open: P1-03
-(CSV formulas) and P1-04 (false wording). Nobody has yet checked the deployed site.
+**Where things stand, in one paragraph:** Search works (Open Library, D-008), books save and reload, export is
+formula-safe, and an automated suite covers it all in Chromium and Firefox without the network. Phase 1 has one item
+left: P1-04, the false "in-memory" and "zero-dependency" wording. Nobody has yet checked the deployed site.
 
-**Verified** (2026-10-03, on `fix/open-library`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
+**Verified** (2026-10-03, on `fix/csv-formulas`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
 
 | Suite | Result |
 | --- | --- |
 | `python3 tools/check_docs.py` | **0 errors** |
-| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **36 passed**, 4 skipped (live), 2 xfailed (P1-03); same on three runs |
-| `LIVE=1` live tests against openlibrary.org | **4/4 passed** (ISBN and title, both browsers) |
-| Mutation: the old Google Books code | 14 failed, 15 errors |
-| Mutation: no ISBN-13 preference for works | 1 test fails |
-| Mutations from session 4 (save, escaping, P1-05) | carried over; not rerun on the new search code |
+| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **50 passed**, 4 skipped (live); same on three runs |
+| Mutation: no formula prefix | 7 tests fail |
+| Mutation: no quote doubling | 1 test fails |
+| `LIVE=1` live tests | carried over: 4/4 on 2026-10-03, session 5; export does not touch the network |
 
 **What works**
-- **Search** (D-008). ISBN finds that exact edition; title/author finds the first matching work. Clear messages for
-  no results, rate limits, HTTP errors, and network failure.
+- **Search** (D-008). ISBN finds that exact edition; title/author finds the first matching work.
 - **Save, list, remove** (D-003). Persists across reloads; duplicates detected only by ISBN.
-- **Export CSV**. Title, author, ISBN, year, pages; not yet formula-safe (P1-03, test already written).
+- **Export CSV** (P1-03). Every cell quoted; formula-like cells start with `'`.
 - **Escaping** (P1-02). Book text shows as text, including `&`, `'`, and `<>`.
 
 **Not verified**
-- The Vercel deployment (Q-004); the real Tailwind layout under test; Safari and phones.
+- The Vercel deployment (Q-004); opening an export in a real spreadsheet program; Safari and phones.
 
 **Gotchas for the next session**
 - A 429 is not always a rate limit: Google's was a quota of 0. Read the reply body.
 - A title search's ISBN and year belong to the work, not to a particular edition (ARCHITECTURE, "Claims vs. code").
-- Use `commit()` in tests, never a bare click: saving is asynchronous (TESTING.md, "Known pitfalls").
-- When P1-03 lands, its strict xfail test will fail the run until its marker is removed. That is intended.
+- Use `commit()` in tests, never a bare click; read CSV with `newline=""` (TESTING.md, "Known pitfalls").
+- PRs #2 to #4 show as "closed", not "merged", on GitHub; their commits are on `main` unchanged.
 - `agent-template/` is the upstream framework copy; leave it alone (AGENTS.md, "Protected areas").
 
 ## Next steps (in order)
 
-1. Maintainer: merge #2, #3, and this pull request in that order; check that CI passes on each.
-2. Maintainer: try a search on the deployed site (Q-004).
-3. P1-03: make CSV export formula-safe; remove the xfail marker.
-4. P1-04: drop the "in-memory" and "zero-dependency" wording.
+1. Maintainer: review and merge the P1-03 pull request.
+2. P1-04: drop the "in-memory" and "zero-dependency" wording; that finishes Phase 1.
+3. Maintainer: try a search and an export on the deployed site (Q-004); open the CSV in a spreadsheet.
 
 ## Open questions for maintainers
 
@@ -84,6 +80,22 @@ oldest to `docs/archive/` and leave a pointer here.
 **Left undone:**
 **Next session should start with:**
 ```
+
+### Session 6: 2026-10-03: formula-safe CSV export
+
+**Contributor:** Claude Code (Opus 5.5), for gordonk
+**Goal:** P1-03
+**Done:** P1-03
+**Changed:** `index.html`: `csvCell()` quotes every export cell and prefixes formula triggers with `'`; tests: the
+xfail test became two real ones (eight cases per browser); `export_csv()` reads with `newline=""`
+**Decisions:** none
+**Verified:** 50 passed, three runs; two mutation checks caught
+**Not verified:** opening the CSV in a spreadsheet program; the deployed site
+**Problems / surprises:** the ISBN, year, and pages cells had no quote escaping either; the carriage-return case
+first failed because of the test helper, not the app
+**Corrections:** none
+**Left undone:** P1-04
+**Next session should start with:** P1-04
 
 ### Session 5: 2026-10-03: switch to Open Library
 

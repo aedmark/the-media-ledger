@@ -129,6 +129,8 @@ the same commit is a bug in the test (see "Known pitfalls").
   newly staged book. The `commit()` helper waits for the save to finish; use it rather than clicking directly.
 - **Tailwind's `hidden` class carries logic.** Without the CDN, nothing ever hides; the test stub keeps that one
   rule. If the app starts depending on another utility class for behaviour, add it to `TAILWIND_STUB`.
+- **Read CSV files with `newline=""`.** Python's text mode turns a `\r` inside a cell into `\n`, which made a
+  correct export look wrong (P1-03). `export_csv()` does this already.
 - **`file://` and `localhost` keep separate ledgers.** A book saved in one is missing in the other; it is not a load
   bug.
 - **A mutation check must break the fix, not the test.** Remove just the fix.

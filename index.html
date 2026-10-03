@@ -397,6 +397,14 @@
             };
         }
 
+        // Every cell is quoted with its quotes doubled. A spreadsheet runs a cell starting with = + - @ (or a tab or
+        // carriage return) as a formula, so such cells get a leading apostrophe, which spreadsheets show as text.
+        function csvCell(value) {
+            let text = String(value);
+            if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+
         exportBtn.addEventListener('click', () => {
             if (ledger.length === 0) {
                 showToast('Nothing to export. Add books first.', 'error');
@@ -406,14 +414,8 @@
             // Define CSV headers
             const headers = ['Title', 'Author', 'ISBN', 'Published Year', 'Pages'];
             
-            // Map ledger data to rows, escaping quotes to preserve CSV integrity
-            const rows = ledger.map(book => [
-                `"${book.title.replace(/"/g, '""')}"`,
-                `"${book.author.replace(/"/g, '""')}"`,
-                `"${book.isbn}"`,
-                `"${book.publishedYear}"`,
-                `"${book.pages}"`
-            ].join(','));
+            const rows = ledger.map(book =>
+                [book.title, book.author, book.isbn, book.publishedYear, book.pages].map(csvCell).join(','));
 
             const csvContent = [headers.join(','), ...rows].join('\n');
             

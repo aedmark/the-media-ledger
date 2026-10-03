@@ -3,7 +3,6 @@
 Each test corresponds to a step of the manual smoke test or a roadmap item in docs/TESTING.md.
 """
 import csv
-import io
 
 import pytest
 from playwright.sync_api import expect
@@ -46,8 +45,8 @@ def reload(page):
 def export_csv(page):
     with page.expect_download() as download:
         page.click("#btn-export")
-    with open(download.value.path(), encoding="utf-8") as f:
-        return list(csv.reader(io.StringIO(f.read())))
+    with open(download.value.path(), encoding="utf-8", newline="") as f:  # keep \r inside cells
+        return list(csv.reader(f))
 
 
 def test_starts_empty(app):
@@ -202,11 +201,24 @@ def test_hostile_book_renders_as_text(app, library):  # P1-02
     assert saved_records(app) == []
 
 
-@pytest.mark.xfail(strict=True, reason="P1-03: CSV cells are not yet guarded against formulas")
-def test_export_neutralises_spreadsheet_formulas(app, library):
+def test_export_neutralises_spreadsheet_formulas(app, library):  # P1-03
     library.reply_with("title:Hostile", "search_hostile.json")
     search_title(app, "Hostile")
     commit(app)
+    [header, row] = export_csv(app)
+    assert len(row) == len(header)  # quotes inside the ISBN did not break the row
+    title, author, isbn, year, pages = row
+    assert author == "'=HYPERLINK(\"http://example.invalid\",\"click\"), <b>Bold</b> & 'Quoted'"
+    assert title.startswith("<img") and isbn.startswith("<svg onload=")
+
+
+@pytest.mark.parametrize("start", ["=", "+", "-", "@", "\t", "\r"])
+def test_export_prefixes_every_formula_trigger(app, start):  # P1-03
+    app.evaluate("""start => new Promise(resolve => {
+        const book = {id: 'f1', title: start + '1+1', author: 'A', isbn: 'N/A', publishedYear: '2000', pages: 1};
+        const request = db.transaction(['books'], 'readwrite').objectStore('books').add(book);
+        request.onsuccess = resolve;
+    })""", start)
+    reload(app)
     expect(app.locator("#ledger-list li")).to_have_count(1)
-    author = export_csv(app)[1][1]
-    assert not author.startswith(("=", "+", "-", "@"))
+    assert export_csv(app)[1][0] == "'" + start + "1+1"

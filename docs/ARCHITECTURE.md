@@ -42,7 +42,7 @@ form input -> Open Library (edition or first work) -> book record -> staged book
 | --- | --- | --- | --- |
 | Book record | search handler | IndexedDB, list, CSV | `{id: string (Date.now()), title, author, isbn ('N/A' if none), publishedYear (4 chars or 'Unknown'), pages (number or 'Unknown')}`; changing it needs a migration (D-003) |
 | IndexedDB `LibraryLedgerDB` v1 | `onupgradeneeded` | `loadLedger()` and handlers | store `books`, `keyPath: "id"`; no indexes |
-| CSV export | export handler | the user's spreadsheet | header `Title,Author,ISBN,Published Year,Pages`; every cell double-quoted |
+| CSV export | export handler | the user's spreadsheet | header `Title,Author,ISBN,Published Year,Pages`; every cell double-quoted; formula-like cells start with `'` (P1-03) |
 | Open Library Books API | Open Library | search handler | `{"ISBN:<isbn>": edition}` or `{}`; uses title, authors[].name, publish_date, number_of_pages, identifiers; no key (D-008) |
 | Open Library search | Open Library | search handler | `docs[0]` with the requested `fields`; a work, not an edition (D-008) |
 
@@ -64,7 +64,7 @@ Rules that hold everywhere and that a change must not break. Each names what enf
 | Form fields | strings | trimmed (ISBN: `-` and spaces stripped); every value `encodeURIComponent` | encode before putting into a URL (P1-05) |
 | Open Library reply | JSON | only the presence of the edition or `docs` | every string escaped with `escapeHTML()` before display (P1-02) |
 | Stored records | objects from IndexedDB | nothing | same as the API reply: they came from it |
-| CSV cells | strings | quotes doubled | must not start a formula (P1-03) |
+| CSV cells | strings | `csvCell()`: quotes doubled; a leading `=`, `+`, `-`, `@`, tab, or CR gets an apostrophe | no cell runs as a formula (P1-03) |
 
 ## Dependencies
 

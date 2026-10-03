@@ -17,4 +17,6 @@ it to the version tag and date and start a new section. The version bump itself 
 - Searching works again. Google Books stopped answering requests without a key, so every search failed; books are
   now looked up at Open Library. Titles may use the library catalogue's capitalisation.
 - When the book service is busy or returns an error, the app now says so instead of "No books found".
+- Exported spreadsheets no longer run book details as formulas. A title or author that begins with `=`, `+`, `-`,
+  or `@` now starts with an apostrophe in the CSV, which spreadsheets display as plain text.
 - ISBN searches containing characters such as `&` or `#` are now sent correctly.
