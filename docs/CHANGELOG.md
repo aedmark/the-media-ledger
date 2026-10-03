@@ -12,6 +12,10 @@ it to the version tag and date and start a new section. The version bump itself 
 - Look up books by ISBN or by title and author, save them to a ledger kept in your browser, remove them, and export
   the ledger as CSV.
 
+### Changed
+- The page no longer calls itself "zero-dependency" or its storage "in-memory". It now says your ledger is saved in
+  this browser only, which is what has always happened.
+
 ### Fixed
 - Book details containing HTML could run script in the page; they are now always shown as plain text.
 - Searching works again. Google Books stopped answering requests without a key, so every search failed; books are

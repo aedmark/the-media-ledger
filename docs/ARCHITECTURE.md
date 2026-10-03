@@ -102,8 +102,6 @@ Logging is `console.error` only; it may include API error objects but never cont
 
 ## Claims vs. code
 
-- The ledger subtitle says "In-memory session storage"; data actually persists in IndexedDB (P1-04).
-- The page title says "Zero-Dependency Book Tracker"; it depends on two CDNs and Open Library (P1-04).
 - A title search saves the ISBN of one edition of the work and the work's first publication year, not the details of
   a particular copy (D-008).
 - Vercel builds preview deployments for pull requests, but no file here configures it; production is unknown (Q-004).

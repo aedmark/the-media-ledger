@@ -49,6 +49,14 @@ def export_csv(page):
         return list(csv.reader(f))
 
 
+def test_page_describes_itself_truthfully(app):  # P1-04
+    # The ledger persists in IndexedDB and the page loads outside code, so neither old claim may come back.
+    expect(app).to_have_title("Library Ledger | Personal Book Tracker")
+    expect(app.locator("body")).not_to_contain_text("in-memory", ignore_case=True)
+    expect(app.locator("body")).not_to_contain_text("zero-dependency", ignore_case=True)
+    expect(app.get_by_text("Saved in this browser only.")).to_be_visible()
+
+
 def test_starts_empty(app):
     expect(app.locator("#empty-state")).to_be_visible()
     expect(app.locator("#ledger-list")).to_be_hidden()

@@ -28,9 +28,12 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
   goes through `csvCell()`, which also prefixes tab and carriage return (OWASP's list) and now doubles quotes in the
   ISBN, year, and pages cells too, which were not escaped before. Evidence: 50 passed in Chromium and Firefox, three
   runs; without the prefix 7 tests fail, without quote doubling 1 fails (2026-10-03)
-- [ ] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
+- [x] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
   IndexedDB; the title says "Zero-Dependency" but the page loads Tailwind and Google Fonts from CDNs. Drop the false
-  wording (D-004). Found by code reading (2026-10-03)
+  wording (D-004). Found by code reading (2026-10-03) Done: the title is
+  "Library Ledger | Personal Book Tracker", the tagline "Look books up by ISBN or title.", and the ledger note "Saved
+  in this browser only." Evidence: `test_page_describes_itself_truthfully` passes, and fails on the old wording;
+  52 passed in Chromium and Firefox (2026-10-03). Phase 1 is complete
 - [x] P1-05 URL-encode the ISBN query and check `response.ok` before parsing, so an HTTP error or rate limit gives a
   clear message instead of "No books found". Found by code reading (2026-10-03); the 429 case was then seen live
   during P1-02. Done: ISBN goes through `encodeURIComponent`; a 429 says Google Books is limiting searches, any other

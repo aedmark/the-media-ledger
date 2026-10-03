@@ -57,6 +57,9 @@ Workflow: **pull request**. Agents work on a branch and open a pull request agai
 - Release/version scheme: annotated git tags `vMAJOR.MINOR.PATCH` on `main` (D-005). Versions are for tracking;
   never announce a bump in the UI or as a changelog entry.
 
+The maintainer deletes each branch once it is merged, and GitHub may then show its pull request as "closed" rather
+than "merged". Check `main` for the commits, not the pull request's label.
+
 Never force-push, rewrite shared history, publish, or change the IndexedDB schema version without explicit permission.
 
 ## Maintainer preferences

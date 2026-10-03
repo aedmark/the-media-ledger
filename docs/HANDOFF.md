@@ -14,22 +14,23 @@ Changes: [CHANGELOG.md](CHANGELOG.md). Older sessions: [archive/](archive/README
 
 ## Current state
 
-_Last updated: 2026-10-03, session 6, on `fix/csv-formulas` (from `main` at `7c3348f`, which has P1-02 to P1-06 and
-P4-01): P1-03 done, pull request open for review._
+_Last updated: 2026-10-03, session 7, on `fix/truthful-wording` (from `main` at `a7d6496`, which has P1-03): P1-04
+done, pull request open for review. With it, Phase 1 is complete._
 
-**Where things stand, in one paragraph:** Search works (Open Library, D-008), books save and reload, export is
-formula-safe, and an automated suite covers it all in Chromium and Firefox without the network. Phase 1 has one item
-left: P1-04, the false "in-memory" and "zero-dependency" wording. Nobody has yet checked the deployed site.
+**Where things stand, in one paragraph:** Phase 1 is done: search works (Open Library, D-008), books save and
+reload, export is formula-safe, the page describes itself truthfully, and an automated suite covers it all in
+Chromium and Firefox without the network. Phase 2 (core experience) is next. Nobody has yet checked the deployed
+site.
 
-**Verified** (2026-10-03, on `fix/csv-formulas`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
+**Verified** (2026-10-03, on `fix/truthful-wording`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
 
 | Suite | Result |
 | --- | --- |
 | `python3 tools/check_docs.py` | **0 errors** |
-| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **50 passed**, 4 skipped (live); same on three runs |
-| Mutation: no formula prefix | 7 tests fail |
-| Mutation: no quote doubling | 1 test fails |
-| `LIVE=1` live tests | carried over: 4/4 on 2026-10-03, session 5; export does not touch the network |
+| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **52 passed**, 4 skipped (live) |
+| Mutation: old wording restored | `test_page_describes_itself_truthfully` fails |
+| Real layout with the Tailwind CDN | looked right in the built-in Chromium browser |
+| `LIVE=1` live tests | carried over: 4/4 on 2026-10-03, session 5 |
 
 **What works**
 - **Search** (D-008). ISBN finds that exact edition; title/author finds the first matching work.
@@ -44,14 +45,15 @@ left: P1-04, the false "in-memory" and "zero-dependency" wording. Nobody has yet
 - A 429 is not always a rate limit: Google's was a quota of 0. Read the reply body.
 - A title search's ISBN and year belong to the work, not to a particular edition (ARCHITECTURE, "Claims vs. code").
 - Use `commit()` in tests, never a bare click; read CSV with `newline=""` (TESTING.md, "Known pitfalls").
-- PRs #2 to #4 show as "closed", not "merged", on GitHub; their commits are on `main` unchanged.
+- Merged pull requests can show as "closed"; check `main` (AGENTS.md, "Working agreement").
 - `agent-template/` is the upstream framework copy; leave it alone (AGENTS.md, "Protected areas").
 
 ## Next steps (in order)
 
-1. Maintainer: review and merge the P1-03 pull request.
-2. P1-04: drop the "in-memory" and "zero-dependency" wording; that finishes Phase 1.
-3. Maintainer: try a search and an export on the deployed site (Q-004); open the CSV in a spreadsheet.
+1. Maintainer: review and merge the P1-04 pull request.
+2. Maintainer: try a search and an export on the deployed site (Q-004); open the CSV in a spreadsheet.
+3. Phase 2, starting with P2-01 (choose among several search results), which also eases the work-versus-edition
+   limit of title searches.
 
 ## Open questions for maintainers
 
@@ -80,6 +82,22 @@ oldest to `docs/archive/` and leave a pointer here.
 **Left undone:**
 **Next session should start with:**
 ```
+
+### Session 7: 2026-10-03: truthful wording
+
+**Contributor:** Claude Code (Opus 5.5), for gordonk
+**Goal:** P1-04
+**Done:** P1-04 (Phase 1 complete)
+**Changed:** `index.html`: page title, tagline, and ledger note; a test that pins them; AGENTS.md notes that merged
+pull requests may show as "closed"
+**Decisions:** none
+**Verified:** 52 passed; the new test fails on the old wording; real layout checked by eye
+**Not verified:** the deployed site
+**Problems / surprises:** none
+**Corrections:** session 6's handoff called the "closed" pull requests an oddity; the maintainer deletes merged
+branches, which explains it
+**Left undone:** nothing in Phase 1
+**Next session should start with:** P2-01
 
 ### Session 6: 2026-10-03: formula-safe CSV export
 
