@@ -27,8 +27,12 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
 - [ ] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
   IndexedDB; the title says "Zero-Dependency" but the page loads Tailwind and Google Fonts from CDNs. Drop the false
   wording (D-004). Found by code reading (2026-10-03)
-- [ ] P1-05 URL-encode the ISBN query and check `response.ok` before parsing, so an HTTP error or rate limit gives a
-  clear message instead of "No books found". Found by code reading (2026-10-03)
+- [x] P1-05 URL-encode the ISBN query and check `response.ok` before parsing, so an HTTP error or rate limit gives a
+  clear message instead of "No books found". Found by code reading (2026-10-03); the 429 case was then seen live
+  during P1-02. Done: ISBN goes through `encodeURIComponent`; a 429 says Google Books is limiting searches, any other
+  HTTP error names its status. Evidence: stubbed 429, 503, empty, found, and network-failure replies each gave the
+  right message; a live search here (429) showed the new message; with the fix stashed, the 429 said "No books found"
+  and `978&q=x#y` leaked into the URL unencoded. Chromium (built-in browser), 2026-10-03
 
 ## Phase 2: Core experience
 

@@ -59,7 +59,7 @@ Rules that hold everywhere and that a change must not break. Each names what enf
 
 | Boundary | Comes in as | Checked by | Rule |
 | --- | --- | --- | --- |
-| Form fields | strings | trimmed; title/author `encodeURIComponent`, ISBN only strips `-` and spaces | encode before putting into a URL (P1-05) |
+| Form fields | strings | trimmed (ISBN: `-` and spaces stripped); every value `encodeURIComponent` | encode before putting into a URL (P1-05) |
 | Google Books reply | JSON | only `totalItems`/`items` presence | every string escaped with `escapeHTML()` before display (P1-02) |
 | Stored records | objects from IndexedDB | nothing | same as the API reply: they came from it |
 | CSV cells | strings | quotes doubled | must not start a formula (P1-03) |
@@ -88,7 +88,8 @@ Record it here, pinned, the same session.
 | --- | --- | --- | --- |
 | IndexedDB unavailable or blocked | error toast "Failed to connect to local database"; saving then throws because `db` is undefined | console error | none; the user must allow site storage |
 | Network down | toast "Network error while communicating with the API." | console error | retry |
-| Google Books HTTP error or rate limit | toast "No books found for this query." (misleading) | none | P1-05 |
+| Google Books rate limit (429) | toast says searches are being limited; try again in a minute | `console.error` with the status | wait; anonymous quota (D-002) |
+| Other Google Books HTTP error | toast names the HTTP status | `console.error` with the status | retry later |
 | Tailwind CDN unreachable | page renders unstyled but works | none | none |
 
 Logging is `console.error` only; it may include API error objects but never contains secrets (there are none).

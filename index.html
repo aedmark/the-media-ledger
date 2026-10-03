@@ -211,7 +211,7 @@
             if (searchType === 'isbn') {
                 const isbn = isbnInput.value.replace(/[- ]/g, ''); // Clean formatting
                 if (!isbn) return showToast('Please enter an ISBN', 'error');
-                query = `isbn:${isbn}`;
+                query = `isbn:${encodeURIComponent(isbn)}`;
             } else {
                 const title = titleInput.value.trim();
                 const author = authorInput.value.trim();
@@ -228,6 +228,17 @@
             try {
                 // We use Google Books API as it's highly reliable, CORS friendly, and requires no key for basic queries.
                 const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+
+                // An HTTP error (often 429 for anonymous use) is not the same as "no results"; say which it was.
+                if (!response.ok) {
+                    console.error("Google Books HTTP error:", response.status);
+                    const message = response.status === 429
+                        ? 'Google Books is limiting searches right now. Try again in a minute.'
+                        : `Google Books returned an error (HTTP ${response.status}).`;
+                    showToast(message, 'error');
+                    return;
+                }
+
                 const data = await response.json();
 
                 if (data.totalItems === 0 || !data.items) {

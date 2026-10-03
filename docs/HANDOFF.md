@@ -14,44 +14,48 @@ Changes: [CHANGELOG.md](CHANGELOG.md). Older sessions: [archive/](archive/README
 
 ## Current state
 
-_Last updated: 2026-10-03, session 2, on `fix/escape-book-fields` (from `main` at `af4256b`): P1-02 fixed, pull
-request open for review._
+_Last updated: 2026-10-03, session 3, on `fix/search-errors` (from `main` at `ef213e9`, which has P1-02): P1-05
+fixed, pull request open for review._
 
 **Where things stand, in one paragraph:** The app works as a single page: search Google Books, save to IndexedDB,
-remove, export CSV. P1-01, P1-02, and P4-03 are done; P1-03, P1-04, and P1-05 are open. The biggest gap: no search
-has yet succeeded against the live Google Books API from here (it answered 429), and there are no automated tests.
+remove, export CSV. P1-01, P1-02, P1-05, and P4-03 are done; P1-03 and P1-04 are open. The biggest gap: no search
+has yet succeeded against the live Google Books API from here (it keeps answering 429), and there are no automated
+tests.
 
-**Verified** (2026-10-03, on `fix/escape-book-fields`, Linux, built-in Chromium browser, `python3 -m http.server 8123`)
+**Verified** (2026-10-03, on `fix/search-errors`, Linux, built-in Chromium browser, `python3 -m http.server 8123`)
 
 | Suite | Result |
 | --- | --- |
 | `python3 tools/check_docs.py` | **0 errors** |
-| Injection check (stored record and staged book, all fields) | **pass**: no script ran; fails with the fix stashed |
-| Manual smoke test, steps 1 to 8, **stubbed search** | **8/8** |
-| Manual smoke test against live Google Books | **not run**: API answered 429 |
+| Search error handling, stubbed 429 / 503 / empty / found / network failure | **5/5** right message; fails with the fix stashed |
+| ISBN encoding (`978&q=x#y`) | **pass**: sent as `978%26q%3Dx%23y`; unencoded with the fix stashed |
+| Live search from this machine | Google answered 429; the app showed the new rate-limit message |
+| Injection check, smoke test 8/8 (stubbed search) | carried over from session 2 on `fix/escape-book-fields` |
 
 **What works**
-- **Search** (D-002). ISBN or title/author; takes the first result only. Seen only with a stubbed `fetch`.
+- **Search** (D-002). ISBN or title/author; first result only; clear messages for rate limits and HTTP errors.
+  A successful search has been seen only with a stubbed `fetch`.
 - **Save, list, remove** (D-003). Persists across reloads; duplicates detected only by ISBN.
 - **Export CSV**. Title, author, ISBN, year, pages; not yet formula-safe (P1-03).
-- **Escaping** (P1-02). Book text shows as text, including `&`, `'`, and `<>`, with no double escaping.
+- **Escaping** (P1-02). Book text shows as text, including `&`, `'`, and `<>`.
 
 **Not verified**
-- A live Google Books search; Firefox, Safari, and phones.
+- A successful live Google Books search; Firefox, Safari, and phones.
 
 **Gotchas for the next session**
 - Another process may already hold port 8000; use another port (that is a separate origin with its own ledger).
-- Google Books may answer 429 here; see TESTING.md "Environment recipes" for the stub.
+- Google Books answers 429 from this machine; see TESTING.md "Environment recipes" for the stub.
 - After removing the last book, the hidden list keeps its old item until the next render. Invisible; harmless.
+- `pkill -f "http.server 8123"` inside a longer shell command also matches that shell and kills it; run it alone.
 - `agent-template/` is the upstream framework copy; leave it alone (AGENTS.md, "Protected areas").
 
 ## Next steps (in order)
 
-1. Maintainer: review and merge the P1-02 pull request.
-2. P1-05: encode the ISBN and report HTTP errors such as 429 (seen live this session).
-3. P1-03, then P1-04.
+1. Maintainer: review and merge the P1-05 pull request.
+2. P1-03: make CSV export formula-safe.
+3. P1-04: drop the "in-memory" and "zero-dependency" wording.
 4. Run the smoke test against the live API from a normal network.
-5. P4-01: automate the smoke test, with the stubbed `fetch` used here.
+5. P4-01: automate the smoke test, with the stubbed `fetch` used in sessions 2 and 3.
 
 ## Open questions for maintainers
 
@@ -80,6 +84,22 @@ oldest to `docs/archive/` and leave a pointer here.
 **Left undone:**
 **Next session should start with:**
 ```
+
+### Session 3: 2026-10-03: clear search errors
+
+**Contributor:** Claude Code (Opus 5.5), for gordonk
+**Goal:** P1-05
+**Done:** P1-05
+**Changed:** `index.html`: ISBN URL-encoded; non-OK responses report a rate limit (429) or the HTTP status instead
+of "No books found"
+**Decisions:** none
+**Verified:** docs check 0 errors; five stubbed reply types and the ISBN encoding, each failing with the fix stashed;
+a live 429 showed the new message
+**Not verified:** a successful live search; other browsers
+**Problems / surprises:** PR #1 was reported merged before it was; checked with `gh pr view` before branching
+**Corrections:** none
+**Left undone:** P1-03, P1-04
+**Next session should start with:** P1-03
 
 ### Session 2: 2026-10-03: escape book fields
 

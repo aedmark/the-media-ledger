@@ -97,8 +97,8 @@ the injection approach above to rerunning searches until a rare reply appears.
 
 - The agent sandbox may block network access: if every search fails with the network toast, record the smoke test as
   "not run: no network" rather than as a failure.
-- Google Books may answer `429` to anonymous requests from a sandbox or a shared IP (seen 2026-10-03); until P1-05
-  the app reports that as "No books found". Check the status in devtools. To still exercise steps 1 to 8, replace
+- Google Books may answer `429` to anonymous requests from a sandbox or a shared IP (seen 2026-10-03); the app then
+  says Google Books is limiting searches (P1-05). To still exercise steps 1 to 8, replace
   `window.fetch` in the console with a function returning `{ok: true, json: async () => ({totalItems: 1, items:
   [{volumeInfo: {...}}]})}`; record the run as "stubbed search", since it does not prove the live API works.
 - To test export without downloading a file, wrap `URL.createObjectURL` to keep the Blob and read it with
