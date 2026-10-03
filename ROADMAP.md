@@ -23,7 +23,8 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
   `<img onerror>` in every field and a quote-breaking id rendered as text and executed nothing; with the fix
   stashed, the same check executed the payload. Chromium (built-in browser), 2026-10-03
 - [ ] P1-03 Guard CSV export against spreadsheet formula injection: prefix cells beginning with `=`, `+`, `-`, `@`
-  with `'`. Done when such a title opens as text in a spreadsheet. Found by code reading (2026-10-03)
+  with `'`. Done when such a title opens as text in a spreadsheet. Found by code reading (2026-10-03). Test written
+  ahead of the fix: `test_export_neutralises_spreadsheet_formulas`, marked `xfail(strict=True)`
 - [ ] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
   IndexedDB; the title says "Zero-Dependency" but the page loads Tailwind and Google Fonts from CDNs. Drop the false
   wording (D-004). Found by code reading (2026-10-03)
@@ -52,13 +53,20 @@ Goal: managing a ledger is quick and forgiving.
 
 ## Phase 4: Quality: speed, accessibility, robustness
 
-- [ ] P4-01 Automated end-to-end smoke test (headless browser, Google Books stubbed) run locally and in CI. Done when
+- [x] P4-01 Automated end-to-end smoke test (headless browser, Google Books stubbed) run locally and in CI. Done when
   the manual smoke steps in `docs/TESTING.md` are automated and a deliberately broken save fails it.
+  Done (D-007): Playwright for Python with pytest, Chromium and Firefox, Google Books from fixtures, CI on GitHub
+  Actions. 15 tests per browser cover the manual smoke steps, error messages (P1-05), and injection (P1-02).
+  Evidence: 30 passed three runs in a row; breaking the save failed 5 tests, removing escaping failed 1, removing the
+  P1-05 checks failed 3 (2026-10-03)
 - [ ] P4-02 Accessibility pass: the remove button has only a `title`, toasts are not announced to screen readers, and
   keyboard focus is unchecked.
 - [x] P4-03 Replace the inline `onclick="removeBook(...)"` with an event listener so a Content-Security-Policy can
   forbid inline handlers. Done with P1-02, which needed it (2026-10-03). The Tailwind CDN script still stands
   in the way of a strict policy.
+- [ ] P4-04 Replace the three synthetic Google Books fixtures with recorded replies: run `tools/record_fixtures.py`
+  from a network Google is not rate-limiting, then rerun the suite. Needs the maintainer's network: Google answered
+  429 from the agent's (2026-10-03)
 
 ## Phase 5: Later: other media and offline
 

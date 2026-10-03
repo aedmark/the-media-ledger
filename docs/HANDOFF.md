@@ -14,52 +14,54 @@ Changes: [CHANGELOG.md](CHANGELOG.md). Older sessions: [archive/](archive/README
 
 ## Current state
 
-_Last updated: 2026-10-03, session 3, on `fix/search-errors` (from `main` at `ef213e9`, which has P1-02): P1-05
-fixed, pull request open for review._
+_Last updated: 2026-10-03, session 4, on `test/playwright-suite`, stacked on `fix/search-errors` (P1-05, PR #2 not
+yet merged): P4-01 done, pull request open for review. Merge #2 first._
 
 **Where things stand, in one paragraph:** The app works as a single page: search Google Books, save to IndexedDB,
-remove, export CSV. P1-01, P1-02, P1-05, and P4-03 are done; P1-03 and P1-04 are open. The biggest gap: no search
-has yet succeeded against the live Google Books API from here (it keeps answering 429), and there are no automated
-tests.
+remove, export CSV. P1-01, P1-02, P1-05 (pending merge), P4-01, and P4-03 are done; P1-03 and P1-04 are open. An
+automated end-to-end suite now covers the whole smoke test in Chromium and Firefox without touching the network. The
+biggest gap: no search has succeeded against the live Google Books API from here (always 429), and three fixtures
+are synthetic until recorded (P4-04).
 
-**Verified** (2026-10-03, on `fix/search-errors`, Linux, built-in Chromium browser, `python3 -m http.server 8123`)
+**Verified** (2026-10-03, on `test/playwright-suite`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
 
 | Suite | Result |
 | --- | --- |
 | `python3 tools/check_docs.py` | **0 errors** |
-| Search error handling, stubbed 429 / 503 / empty / found / network failure | **5/5** right message; fails with the fix stashed |
-| ISBN encoding (`978&q=x#y`) | **pass**: sent as `978%26q%3Dx%23y`; unencoded with the fix stashed |
-| Live search from this machine | Google answered 429; the app showed the new rate-limit message |
-| Injection check, smoke test 8/8 (stubbed search) | carried over from session 2 on `fix/escape-book-fields` |
+| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **30 passed**, 2 skipped (live), 2 xfailed (P1-03); same on three runs |
+| Mutation: save never writes | 5 tests fail |
+| Mutation: escaping removed | 1 test fails (`test_hostile_book_renders_as_text`) |
+| Mutation: P1-05 status check and ISBN encoding removed | 3 tests fail |
+| `LIVE=1` live test | **skipped**: Google answered 429 |
+| CI workflow | not yet run: first run will be on this pull request |
 
 **What works**
 - **Search** (D-002). ISBN or title/author; first result only; clear messages for rate limits and HTTP errors.
-  A successful search has been seen only with a stubbed `fetch`.
+  Successful searches are verified only against fixtures.
 - **Save, list, remove** (D-003). Persists across reloads; duplicates detected only by ISBN.
-- **Export CSV**. Title, author, ISBN, year, pages; not yet formula-safe (P1-03).
+- **Export CSV**. Title, author, ISBN, year, pages; not yet formula-safe (P1-03, test already written).
 - **Escaping** (P1-02). Book text shows as text, including `&`, `'`, and `<>`.
 
 **Not verified**
-- A successful live Google Books search; Firefox, Safari, and phones.
+- A successful live search; the real Tailwind layout under test; Safari and phones.
 
 **Gotchas for the next session**
-- Another process may already hold port 8000; use another port (that is a separate origin with its own ledger).
-- Google Books answers 429 from this machine; see TESTING.md "Environment recipes" for the stub.
+- Use `commit()` in tests, never a bare click: saving is asynchronous (TESTING.md, "Known pitfalls").
+- When P1-03 lands, its strict xfail test will fail the run until its marker is removed. That is intended.
+- Another process may hold port 8000; the tests choose their own port.
 - After removing the last book, the hidden list keeps its old item until the next render. Invisible; harmless.
-- `pkill -f "http.server 8123"` inside a longer shell command also matches that shell and kills it; run it alone.
 - `agent-template/` is the upstream framework copy; leave it alone (AGENTS.md, "Protected areas").
 
 ## Next steps (in order)
 
-1. Maintainer: review and merge the P1-05 pull request.
-2. P1-03: make CSV export formula-safe.
-3. P1-04: drop the "in-memory" and "zero-dependency" wording.
-4. Run the smoke test against the live API from a normal network.
-5. P4-01: automate the smoke test, with the stubbed `fetch` used in sessions 2 and 3.
+1. Maintainer: merge PR #2 (P1-05), then this one (P4-01); check that the first CI run passes.
+2. Maintainer: run `python3 tools/record_fixtures.py` and `LIVE=1` from your own network (P4-04).
+3. P1-03: make CSV export formula-safe; remove the xfail marker.
+4. P1-04: drop the "in-memory" and "zero-dependency" wording.
 
 ## Open questions for maintainers
 
-- None open. Q-001 to Q-003 answered 2026-10-03 (D-004 to D-006).
+- Q-004 How and where Vercel deploys the site; blocks nothing.
 
 ## Session log
 
@@ -84,6 +86,24 @@ oldest to `docs/archive/` and leave a pointer here.
 **Left undone:**
 **Next session should start with:**
 ```
+
+### Session 4: 2026-10-03: automated end-to-end tests
+
+**Contributor:** Claude Code (Opus 5.5), for gordonk
+**Goal:** P4-01, so later work does not depend on Google's rate limits
+**Done:** P4-01
+**Changed:** added `tests/` (conftest, 15 end-to-end tests, opt-in live test, five fixtures), `pytest.ini`,
+`requirements-dev.txt`, `tools/record_fixtures.py`, `.github/workflows/tests.yml`, `.gitignore`; docs updated.
+`index.html` unchanged
+**Decisions:** D-007; Q-004 asked; P4-04 added
+**Verified:** 30 passed in Chromium and Firefox on three runs; three mutation checks each caught; docs check 0 errors
+**Not verified:** live API (429); the CI workflow has not run yet
+**Problems / surprises:** two tests failed in Chromium only because they clicked Save and carried on before the
+IndexedDB write finished; fixed in the `commit()` helper. The two "checks" on PRs are Vercel previews (Q-004). An
+empty `.venv/` already existed; the test tools were installed into it
+**Corrections:** none
+**Left undone:** P1-03, P1-04, P4-04
+**Next session should start with:** P1-03, once #2 and this pull request are merged
 
 ### Session 3: 2026-10-03: clear search errors
 

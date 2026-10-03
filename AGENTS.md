@@ -110,6 +110,11 @@ Things an agent must not change without explicit permission. Every rule includes
 | `docs/CHANGELOG.md` | User-visible release notes |
 | `docs/archive/` | Historical material no longer current |
 | `tools/check_docs.py` | Documentation consistency checks |
+| `tools/record_fixtures.py` | Records real Google Books replies into the test fixtures |
+| `tests/` | End-to-end tests (`test_app.py`), the opt-in live test, and Google Books fixtures |
+| `pytest.ini` | Test settings: which browsers run by default |
+| `requirements-dev.txt` | Pinned test tools (D-007) |
+| `.github/workflows/tests.yml` | CI: docs check and tests on pull requests and `main` |
 | `agent-template/` | The unmodified documentation framework this setup was derived from |
 
 ## Engineering conventions
@@ -124,19 +129,21 @@ Things an agent must not change without explicit permission. Every rule includes
 - Data stays on the device. Nothing is sent anywhere except the search query to Google Books.
 - Stored records keep the shape `{id, title, author, isbn, publishedYear, pages}`; a change needs a migration (D-003).
 - No generated files are committed.
+- New behaviour gets an end-to-end test in `tests/test_app.py`; tests never touch the real network (D-007).
 
 ## Environments
 
 | Environment | Can access | Cannot access / caveats |
 | --- | --- | --- |
 | Local development | Any browser; `python3 -m http.server` for a local origin; the Google Books API over the network | IndexedDB is per origin: data saved under `file://` is not visible at `http://localhost:8000` |
-| Agent sandbox | Python 3 for `tools/check_docs.py`; possibly the built-in browser | Network may be restricted, so live searches can fail for reasons unrelated to the code |
-| CI | None configured yet (P4-01) | |
+| Agent sandbox | Python 3, `.venv` with the test tools, cached Playwright Chromium and Firefox; possibly the built-in browser | Google Books answered 429 to every request (2026-10-03): rely on the fixtures |
+| CI (GitHub Actions) | Ubuntu, Python 3.13, Playwright Chromium and Firefox | No network use by the tests; no secrets |
+| Vercel | Preview deployment per pull request | Configured outside the repository; production unknown (Q-004) |
 
 ## Run and verify
 
-- Setup: none.
-- Run: `python3 -m http.server 8000`, then open `http://localhost:8000/`.
-- Fast checks: `python3 tools/check_docs.py`.
-- Full checks: the fast checks plus the manual smoke test in `docs/TESTING.md` (no automated tests yet, P4-01).
+- Setup: none to run the app; for tests, the three commands in `docs/TESTING.md`, "Before any run".
+- Run: `python3 -m http.server 8000` (or any free port), then open `http://localhost:8000/`.
+- Fast checks: `python3 tools/check_docs.py` and `.venv/bin/python -m pytest -q`.
+- Full checks: the fast checks plus the live test and manual checks in `docs/TESTING.md`.
 - Detailed test guidance: `docs/TESTING.md`.

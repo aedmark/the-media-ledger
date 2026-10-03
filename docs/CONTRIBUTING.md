@@ -6,7 +6,7 @@ in [AGENTS.md](../AGENTS.md).
 ## Before changing code
 
 1. Read the README, relevant roadmap item, architecture section, and test guidance.
-2. Setup: none beyond a browser and Python 3 (see [README.md](../README.md)).
+2. Setup: a browser and Python 3 to run the app; for tests, see [TESTING.md](TESTING.md), "Before any run".
 3. Check `git status` and confirm that your change will not overlap unrelated work.
 4. Mark the roadmap item `[~]` with your name and the date if the work spans sessions.
 5. For a change to stored data or a split of `index.html`, agree on scope with the maintainer first.
@@ -23,10 +23,11 @@ in [AGENTS.md](../AGENTS.md).
 
 ```bash
 python3 tools/check_docs.py
-python3 -m http.server 8000
+.venv/bin/python -m pytest -q
 ```
 
-Then run the manual smoke test in [TESTING.md](TESTING.md). Report the exact checks run and any checks skipped; a
+First-time setup is in [TESTING.md](TESTING.md), "Before any run"; CI runs the same two commands on every pull
+request. Report the exact checks run and any checks skipped; a
 partial pass is not a full pass.
 
 ## Submit and review

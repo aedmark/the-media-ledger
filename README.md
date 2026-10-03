@@ -25,6 +25,15 @@ Start with [AGENTS.md](AGENTS.md) (rules for humans and coding agents alike), th
 [docs/HANDOFF.md](docs/HANDOFF.md) for where things stand and [ROADMAP.md](ROADMAP.md) for what is next. The
 documentation map is [docs/README.md](docs/README.md).
 
+Tests run headless in Chromium and Firefox without touching the network:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m playwright install chromium-headless-shell firefox
+.venv/bin/python -m pytest -q
+```
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE).

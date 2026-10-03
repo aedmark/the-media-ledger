@@ -79,6 +79,20 @@ intended later scope (P5-01), not a maybe. 3. Until then, book work should not m
 **Consequences:** P5-01 will need a `mediaType` on records, a database version bump with migration (D-003), and a
 lookup source for films; the product name is revisited with it (P6-01).
 
+## D-007 End-to-end tests with Playwright for Python, Google Books answered from fixtures  (2026-10-03, status: accepted)
+**Context:** P4-01. Google Books answered 429 to every anonymous request from the development machine, so manual
+searches could not verify anything; the maintainer asked for testing that does not depend on Google.
+**Decision:** 1. Tests drive the real `index.html` in headless Chromium and Firefox through Playwright for Python
+with pytest, pinned in `requirements-dev.txt`. 2. Every request to Google Books is answered from JSON fixtures;
+Tailwind is stubbed; any other outside request fails the test. 3. One live test, skipped unless `LIVE=1`, checks the
+real API; a 429 skips it. 4. GitHub Actions runs the docs check and the suite on pull requests and on `main`.
+5. Development tools only: users load none of it, and `index.html` has no test hooks.
+**Alternatives:** Playwright for Node (adds a Node toolchain to a repo that already uses Python); hand-pasted console
+stubs (manual, unrepeatable); a Google API key for tests (still networked, and a secret to manage).
+**Consequences:** Developers need a virtualenv and about 650 MB of cached browsers. Fixtures can drift from Google's
+real replies; `tools/record_fixtures.py` refreshes them, and the live test catches a changed shape. Safari is not
+covered (WebKit is not installed by default).
+
 ## Open questions
 
 Questions requiring maintainer or stakeholder input. This is their one home: HANDOFF and the roadmap refer to them by ID. Numbers are
@@ -95,3 +109,6 @@ permanent; an answered question stays, with the answer and its date.
   git tracking, not advertised to users, D-005.
 - **Q-003** ~~Books only, or all media?~~ Answered 2026-10-03 by the maintainer: books first; VHS, DVD, Blu-ray and
   other collectible visual media later, D-006.
+- **Q-004** How is the site deployed? Vercel posts preview deployments on every pull request (seen on #1 and #2),
+  but nothing in the repository configures it. Is `main` deployed to production, and at what address? (asked
+  2026-10-03, by Claude during P4-01; blocks nothing; recommendation: record the answer in ARCHITECTURE and AGENTS)

@@ -73,6 +73,7 @@ Record it here, pinned, the same session.
 | --- | --- | --- | --- |
 | Tailwind CSS Play CDN | unpinned (`cdn.tailwindcss.com`) | all styling | no build step (D-001); Tailwind marks the Play CDN as not for production, so pinning or a built stylesheet is a candidate proposal |
 | Inter (Google Fonts) | weights 300, 400, 600, 800 | typography | appearance only; the page falls back to sans-serif |
+| pytest, pytest-playwright, Playwright (development only) | pinned in `requirements-dev.txt` | `tests/` | drive real browsers headless; Python matches the existing tooling (D-007) |
 | Google Books API v1 | v1 | book lookup | free, CORS-enabled, no key needed (D-002) |
 
 ## State and caches
@@ -81,6 +82,9 @@ Record it here, pinned, the same session.
 | --- | --- | --- | --- | --- |
 | The user's ledger | IndexedDB `LibraryLedgerDB`, per browser and per origin | the app | browser devtools (Application > IndexedDB) or clearing site data; the app has no reset | no |
 | Exported CSV | the user's downloads folder | the export button | the user | no |
+| Development virtualenv | `.venv/` | `pip install -r requirements-dev.txt` | delete the folder | no, gitignored |
+| Playwright browsers (about 650 MB) | `~/.cache/ms-playwright/`, shared between projects | `playwright install` | by hand only; other projects may use them | no |
+| Test fixtures | `tests/fixtures/google_books/` | by hand or `tools/record_fixtures.py` | re-recording overwrites three of them | yes |
 
 ## Failure modes and observability
 
@@ -98,4 +102,5 @@ Logging is `console.error` only; it may include API error objects but never cont
 
 - The ledger subtitle says "In-memory session storage"; data actually persists in IndexedDB (P1-04).
 - The page title says "Zero-Dependency Book Tracker"; it depends on two CDNs and the Google Books API (P1-04).
+- Vercel builds preview deployments for pull requests, but no file here configures it; production is unknown (Q-004).
 - The repository is called `the-media-ledger`, but only books are supported so far (D-006, P5-01).

@@ -1,0 +1,14 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1,
+  "items": [
+    {
+      "kind": "books#volume",
+      "id": "SYNTHETIC-noisbn",
+      "volumeInfo": {
+        "title": "A Pamphlet Without an ISBN",
+        "publishedDate": "1871"
+      }
+    }
+  ]
+}

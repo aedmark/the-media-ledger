@@ -1,0 +1,4 @@
+# Test tools only; the app itself loads nothing from here (D-007).
+pytest==9.1.1
+pytest-playwright==0.9.0
+playwright==1.63.0
