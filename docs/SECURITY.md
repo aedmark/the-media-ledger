@@ -21,8 +21,8 @@ fix before public disclosure.
 | Asset or boundary | Sensitivity / threat | Protection and validation | Owner |
 | --- | --- | --- | --- |
 | The user's ledger | Reading habits are personal; script injection could read or wipe it | Stays in the browser's IndexedDB; nothing uploads it | storage code |
-| Google Books reply | Untrusted text rendered into the page: script injection (stored, since it is saved) | `escapeHTML()` on every field in `stageBook()` and `updateLedgerUI()`; no inline handlers (P1-02) | rendering code |
-| Search query | Disclosed to Google | Inherent to D-002; documented in README | search handler |
+| Open Library reply | Untrusted text rendered into the page: script injection (stored, since it is saved) | `escapeHTML()` on every field in `stageBook()` and `updateLedgerUI()`; no inline handlers (P1-02) | rendering code |
+| Search query | Disclosed to Open Library (Internet Archive) | Inherent to D-008; documented in README | search handler |
 | CSV export | Formula injection when opened in a spreadsheet | Quotes doubled; formulas not neutralised (P1-03) | export handler |
 | CDN scripts | A compromised CDN runs code with full page access | Unpinned, no Subresource Integrity; pin with the next dependency proposal (D-004) | maintainer |
 

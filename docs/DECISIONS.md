@@ -33,7 +33,7 @@ without extracting it; tests drive the page in a browser (TESTING.md). The Tailw
 production (Q-001).
 **Review trigger:** the inline script passes about 600 lines, or a second page is needed.
 
-## D-002 Google Books API without a key  (2026-08-20, status: accepted, recorded 2026-10-03)
+## D-002 Google Books API without a key  (2026-08-20, status: superseded by D-008, recorded 2026-10-03)
 **Context:** The app needs book metadata from an ISBN or a title. The code comment says the API was chosen as
 "highly reliable, CORS friendly, and requires no key for basic queries".
 **Decision:** Query `https://www.googleapis.com/books/v1/volumes` directly from the browser, unauthenticated, and use
@@ -92,6 +92,25 @@ stubs (manual, unrepeatable); a Google API key for tests (still networked, and a
 **Consequences:** Developers need a virtualenv and about 650 MB of cached browsers. Fixtures can drift from Google's
 real replies; `tools/record_fixtures.py` refreshes them, and the live test catches a changed shape. Safari is not
 covered (WebKit is not installed by default).
+**Update, same session:** the 429s were not a rate limit (D-008). The design is unchanged, but the fixtures,
+recorder, and live test now cover Open Library instead of Google Books.
+
+## D-008 Open Library replaces Google Books  (2026-10-03, status: accepted)
+**Context:** Every keyless Google Books request answered 429. The reply body showed why: the shared project that
+keyless calls count against has a limit of **0 queries per day** (`quota_limit_value: "0"`, `defaultPerDayPerProject`,
+project 624717413613), so search was broken for every user on every network, not rate-limited. Found during P4-04.
+**Decision:** 1. Look books up at Open Library (`openlibrary.org`), keyless; it allows requests from any web page.
+2. ISBN: the Books API (`/api/books?bibkeys=ISBN:...&jscmd=data`), which returns that exact edition. 3. Title and
+author: `search.json` with `title`/`author`, first result. It returns a *work*, so the saved ISBN is one of the work's
+editions (an ISBN-13 if any), and the year is the work's first publication. 4. The stored record shape is unchanged
+(D-003).
+**Alternatives:** Google with an API key restricted to the Books API and the site's domains (needs a Cloud account; the
+key ships in the page); Open Library with Google as a fallback (two sources to maintain and test).
+**Consequences:** Data quality is Open Library's: titles keep their catalogue casing ("Harry Potter and the sorcerer's
+stone"), and page counts can be odd (784 for that edition). Search text is now disclosed to the Internet Archive instead
+of Google. Open Library asks heavy users to identify themselves; a browser cannot set a User-Agent, which is fine at
+this scale.
+**Review trigger:** Open Library rate limits real users, or missing books are reported often.
 
 ## Open questions
 

@@ -14,5 +14,7 @@ it to the version tag and date and start a new section. The version bump itself 
 
 ### Fixed
 - Book details containing HTML could run script in the page; they are now always shown as plain text.
-- When Google Books is busy or returns an error, the app now says so instead of "No books found".
+- Searching works again. Google Books stopped answering requests without a key, so every search failed; books are
+  now looked up at Open Library. Titles may use the library catalogue's capitalisation.
+- When the book service is busy or returns an error, the app now says so instead of "No books found".
 - ISBN searches containing characters such as `&` or `#` are now sent correctly.

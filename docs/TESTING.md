@@ -8,8 +8,8 @@ The results themselves live in HANDOFF's "Current state"; this file is how to ge
 | Suite | File | Proves | Does not prove | Time, needs |
 | --- | --- | --- | --- | --- |
 | Docs check | `tools/check_docs.py` | roadmap IDs, decisions, questions, links, and session numbers are consistent | anything about the app | a second, Python 3 |
-| End to end | `tests/test_app.py` | a user's path through the app (search, save, reload, duplicate, remove, export, error messages, injection) in headless Chromium and Firefox, with Google Books answered from fixtures | that Google's real replies still look like the fixtures; Safari; phones; layout | ten seconds, `.venv` with `requirements-dev.txt`, Playwright browsers; no network |
-| Live | `tests/test_live.py` | one real ISBN search against Google Books works today | that it works every time; anything a 429 hides | a few seconds, network; skipped unless `LIVE=1` |
+| End to end | `tests/test_app.py` | a user's path through the app (search, save, reload, duplicate, remove, export, error messages, injection) in headless Chromium and Firefox, with Open Library answered from fixtures | that Open Library's real replies still look like the fixtures; Safari; phones; layout | ten seconds, `.venv` with `requirements-dev.txt`, Playwright browsers; no network |
+| Live | `tests/test_live.py` | one real ISBN lookup and one title search against Open Library work today | that it works every time; anything a 429 hides | a few seconds, network; skipped unless `LIVE=1` |
 | Manual | this file, "Manual checks" | what looks right to a person in a real browser | anything not looked at | ten minutes, a browser |
 
 **The fast set** (before every commit): `python3 tools/check_docs.py` and `.venv/bin/python -m pytest -q`.
@@ -34,8 +34,8 @@ CI (`.github/workflows/tests.yml`) runs the fast set on every pull request and o
 - **Clean state:** nothing to do for the automated suites. Each test gets a fresh browser context, so IndexedDB
   starts empty, and the tests serve the repo on their own random port. For manual checks, use a private window:
   never clear site data in a browser profile that holds someone's real ledger.
-- **Network:** the end-to-end suite needs none and refuses to use it: `tests/conftest.py` answers Google Books from
-  `tests/fixtures/google_books/`, replaces the Tailwind CDN with the one rule the app's logic needs (`.hidden`),
+- **Network:** the end-to-end suite needs none and refuses to use it: `tests/conftest.py` answers Open Library from
+  `tests/fixtures/open_library/`, replaces the Tailwind CDN with the one rule the app's logic needs (`.hidden`),
   drops font requests, and fails any test whose page tries to reach anything else.
 
 ## Running each suite
@@ -68,26 +68,26 @@ python3 tools/check_docs.py
 LIVE=1 .venv/bin/python -m pytest -q -rs -o addopts="" --browser chromium tests/test_live.py
 ```
 
-- One request to Google. A 429 skips with "rate limited"; that is not a pass. Record the result in HANDOFF with the
+- Two requests to Open Library per browser. A 429 skips with "rate limited"; that is not a pass. Record the result in HANDOFF with the
   date and network.
 
 ### Recording fixtures
 
-Three fixtures are synthetic stand-ins in Google's shape until someone records the real replies:
+Four fixtures are recorded from Open Library (dates in `tests/fixtures/open_library/README.md`). To refresh them:
 
 ```bash
 python3 tools/record_fixtures.py
 ```
 
-Three requests, from a network Google is not rate-limiting. Review the diff, update the table in
-`tests/fixtures/google_books/README.md`, and rerun the end-to-end suite: a test that now fails has found a
-difference between the stand-in and the real thing.
+Four requests. Review the diff, update the dates in `tests/fixtures/open_library/README.md`, and rerun the
+end-to-end suite: a test that now fails has found a change in Open Library's data or shape.
 
 ### Adding a check
 
 - Add tests to `tests/test_app.py`, using its helpers (`search_isbn`, `search_title`, `commit`, `saved_records`,
-  `reload`, `export_csv`). To make Google answer something new, add a fixture file and
-  `google.reply_with(query, file)`; for an HTTP error, `google.next_status = 503`.
+  `reload`, `export_csv`). To make Open Library answer something new, add a fixture file and
+  `library.reply_with("title:Some Title", file)` (or `"isbn:<isbn>"`); for an HTTP error,
+  `library.next_status = 503`. `library.lookups` and `library.raw_urls` record what the app asked for.
 - Assert on what happened (a record in IndexedDB, a row in the list, a cell in the CSV, the URL the app requested);
   check toast wording only when the message itself is the behaviour under test.
 - Before trusting a new check, make it fail: undo the fix (only the fix) and run it.
@@ -95,7 +95,7 @@ difference between the stand-in and the real thing.
 
 ## Runs that vary
 
-Only the live test depends on something outside the code. One run proves little: a pass says Google answered today,
+Only the live test depends on something outside the code. One run proves little: a pass says Open Library answered today,
 a 429 says nothing about the code. The end-to-end suite should be deterministic; a test that passes and fails on
 the same commit is a bug in the test (see "Known pitfalls").
 
@@ -118,8 +118,8 @@ the same commit is a bug in the test (see "Known pitfalls").
 
 - **Arch and other distributions Playwright does not list:** `playwright install` prints "not officially supported"
   and uses its Ubuntu 24.04 build; Chromium and Firefox both ran this way (CachyOS, 2026-10-03).
-- **The agent sandbox:** Google Books answered 429 to every anonymous request (2026-10-03). Use the end-to-end suite;
-  record the live test as "skipped: 429".
+- **Google Books gives keyless requests a quota of 0 per day** (seen 2026-10-03; D-008). A 429 is not always a rate
+  limit: read the reply body before deciding to wait.
 - **Port 8000 is often taken** on the maintainer's machine; the automated suites pick a free port themselves.
 
 ## Known pitfalls (already hit, already fixed: don't re-discover these)

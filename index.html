@@ -203,21 +203,57 @@
             }, 3000);
         }
 
+        // Book data comes from Open Library (D-008): free, no key, and it allows requests from any web page.
+        // An ISBN names one edition, so it uses the Books API; a title search returns works, so it uses search.json.
+        const OPEN_LIBRARY = 'https://openlibrary.org';
+        const SEARCH_FIELDS = 'title,author_name,first_publish_year,isbn,number_of_pages_median';
+
+        function yearFrom(text) {
+            const match = String(text || '').match(/\d{4}/);
+            return match ? match[0] : 'Unknown';
+        }
+
+        function bookFromEdition(edition, searchedIsbn) {
+            const ids = edition.identifiers || {};
+            return {
+                id: Date.now().toString(),
+                title: edition.title || 'Unknown Title',
+                author: edition.authors ? edition.authors.map(a => a.name).join(', ') : 'Unknown Author',
+                isbn: (ids.isbn_13 && ids.isbn_13[0]) || (ids.isbn_10 && ids.isbn_10[0]) || searchedIsbn,
+                publishedYear: yearFrom(edition.publish_date),
+                pages: edition.number_of_pages || 'Unknown'
+            };
+        }
+
+        function bookFromWork(work) {
+            // A work lists the ISBNs of all its editions; prefer an ISBN-13, as the edition lookup does.
+            const isbns = work.isbn || [];
+            return {
+                id: Date.now().toString(),
+                title: work.title || 'Unknown Title',
+                author: work.author_name ? work.author_name.join(', ') : 'Unknown Author',
+                isbn: isbns.find(i => i.length === 13) || isbns[0] || 'N/A',
+                publishedYear: work.first_publish_year ? String(work.first_publish_year) : 'Unknown',
+                pages: work.number_of_pages_median || 'Unknown'
+            };
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const searchType = document.querySelector('input[name="search-type"]:checked').value;
-            let query = '';
+            let url = '';
+            let isbn = '';
 
             if (searchType === 'isbn') {
-                const isbn = isbnInput.value.replace(/[- ]/g, ''); // Clean formatting
+                isbn = isbnInput.value.replace(/[- ]/g, ''); // Clean formatting
                 if (!isbn) return showToast('Please enter an ISBN', 'error');
-                query = `isbn:${encodeURIComponent(isbn)}`;
+                url = `${OPEN_LIBRARY}/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&format=json&jscmd=data`;
             } else {
                 const title = titleInput.value.trim();
                 const author = authorInput.value.trim();
                 if (!title) return showToast('Please enter a Title', 'error');
-                query = `intitle:${encodeURIComponent(title)}`;
-                if (author) query += `+inauthor:${encodeURIComponent(author)}`;
+                url = `${OPEN_LIBRARY}/search.json?title=${encodeURIComponent(title)}&fields=${SEARCH_FIELDS}&limit=1`;
+                if (author) url += `&author=${encodeURIComponent(author)}`;
             }
 
             // UI Loading State
@@ -226,46 +262,33 @@
             currentlyStagedBook = null;
 
             try {
-                // We use Google Books API as it's highly reliable, CORS friendly, and requires no key for basic queries.
-                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+                const response = await fetch(url);
 
-                // An HTTP error (often 429 for anonymous use) is not the same as "no results"; say which it was.
+                // An HTTP error is not the same as "no results"; say which it was.
                 if (!response.ok) {
-                    console.error("Google Books HTTP error:", response.status);
+                    console.error("Open Library HTTP error:", response.status);
                     const message = response.status === 429
-                        ? 'Google Books is limiting searches right now. Try again in a minute.'
-                        : `Google Books returned an error (HTTP ${response.status}).`;
+                        ? 'Open Library is limiting searches right now. Try again in a minute.'
+                        : `Open Library returned an error (HTTP ${response.status}).`;
                     showToast(message, 'error');
                     return;
                 }
 
                 const data = await response.json();
+                let book = null;
+                if (searchType === 'isbn') {
+                    const edition = data[`ISBN:${isbn}`];
+                    if (edition) book = bookFromEdition(edition, isbn);
+                } else if (data.docs && data.docs.length > 0) {
+                    book = bookFromWork(data.docs[0]);
+                }
 
-                if (data.totalItems === 0 || !data.items) {
+                if (!book) {
                     showToast('No books found for this query.', 'error');
                     return;
                 }
 
-                // Extract the most relevant data
-                const volumeInfo = data.items[0].volumeInfo;
-                
-                // Find ISBN 13 or 10
-                let parsedIsbn = 'N/A';
-                if (volumeInfo.industryIdentifiers) {
-                    const isbn13 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_13');
-                    const isbn10 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_10');
-                    parsedIsbn = isbn13 ? isbn13.identifier : (isbn10 ? isbn10.identifier : 'N/A');
-                }
-
-                currentlyStagedBook = {
-                    id: Date.now().toString(),
-                    title: volumeInfo.title || 'Unknown Title',
-                    author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author',
-                    isbn: parsedIsbn,
-                    publishedYear: volumeInfo.publishedDate ? volumeInfo.publishedDate.substring(0,4) : 'Unknown',
-                    pages: volumeInfo.pageCount || 'Unknown'
-                };
-
+                currentlyStagedBook = book;
                 stageBook(currentlyStagedBook);
 
             } catch (error) {

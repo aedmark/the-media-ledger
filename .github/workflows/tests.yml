@@ -22,5 +22,5 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m playwright install --with-deps chromium-headless-shell firefox
       - run: python tools/check_docs.py
-      # Google Books is answered from tests/fixtures/; the live test stays skipped (no LIVE=1).
+      # Open Library is answered from tests/fixtures/; the live tests stay skipped (no LIVE=1).
       - run: python -m pytest -q

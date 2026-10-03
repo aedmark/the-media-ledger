@@ -14,48 +14,46 @@ Changes: [CHANGELOG.md](CHANGELOG.md). Older sessions: [archive/](archive/README
 
 ## Current state
 
-_Last updated: 2026-10-03, session 4, on `test/playwright-suite`, stacked on `fix/search-errors` (P1-05, PR #2 not
-yet merged): P4-01 done, pull request open for review. Merge #2 first._
+_Last updated: 2026-10-03, session 5, on `fix/open-library`, stacked on `test/playwright-suite` (PR #3), which is
+stacked on `fix/search-errors` (PR #2): P1-06 and P4-04 done, pull request open. Merge #2, #3, then this one._
 
-**Where things stand, in one paragraph:** The app works as a single page: search Google Books, save to IndexedDB,
-remove, export CSV. P1-01, P1-02, P1-05 (pending merge), P4-01, and P4-03 are done; P1-03 and P1-04 are open. An
-automated end-to-end suite now covers the whole smoke test in Chromium and Firefox without touching the network. The
-biggest gap: no search has succeeded against the live Google Books API from here (always 429), and three fixtures
-are synthetic until recorded (P4-04).
+**Where things stand, in one paragraph:** Search works again. Google Books gives keyless requests a quota of 0 per
+day, so search had been broken for everyone; the app now uses Open Library (D-008), and real searches succeed. An
+automated suite covers the whole smoke test in Chromium and Firefox on recorded Open Library replies. Open: P1-03
+(CSV formulas) and P1-04 (false wording). Nobody has yet checked the deployed site.
 
-**Verified** (2026-10-03, on `test/playwright-suite`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
+**Verified** (2026-10-03, on `fix/open-library`, CachyOS Linux, Python 3.14.7, Playwright 1.63.0)
 
 | Suite | Result |
 | --- | --- |
 | `python3 tools/check_docs.py` | **0 errors** |
-| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **30 passed**, 2 skipped (live), 2 xfailed (P1-03); same on three runs |
-| Mutation: save never writes | 5 tests fail |
-| Mutation: escaping removed | 1 test fails (`test_hostile_book_renders_as_text`) |
-| Mutation: P1-05 status check and ISBN encoding removed | 3 tests fail |
-| `LIVE=1` live test | **skipped**: Google answered 429 |
-| CI workflow | not yet run: first run will be on this pull request |
+| `.venv/bin/python -m pytest -q` (Chromium and Firefox) | **36 passed**, 4 skipped (live), 2 xfailed (P1-03); same on three runs |
+| `LIVE=1` live tests against openlibrary.org | **4/4 passed** (ISBN and title, both browsers) |
+| Mutation: the old Google Books code | 14 failed, 15 errors |
+| Mutation: no ISBN-13 preference for works | 1 test fails |
+| Mutations from session 4 (save, escaping, P1-05) | carried over; not rerun on the new search code |
 
 **What works**
-- **Search** (D-002). ISBN or title/author; first result only; clear messages for rate limits and HTTP errors.
-  Successful searches are verified only against fixtures.
+- **Search** (D-008). ISBN finds that exact edition; title/author finds the first matching work. Clear messages for
+  no results, rate limits, HTTP errors, and network failure.
 - **Save, list, remove** (D-003). Persists across reloads; duplicates detected only by ISBN.
 - **Export CSV**. Title, author, ISBN, year, pages; not yet formula-safe (P1-03, test already written).
 - **Escaping** (P1-02). Book text shows as text, including `&`, `'`, and `<>`.
 
 **Not verified**
-- A successful live search; the real Tailwind layout under test; Safari and phones.
+- The Vercel deployment (Q-004); the real Tailwind layout under test; Safari and phones.
 
 **Gotchas for the next session**
+- A 429 is not always a rate limit: Google's was a quota of 0. Read the reply body.
+- A title search's ISBN and year belong to the work, not to a particular edition (ARCHITECTURE, "Claims vs. code").
 - Use `commit()` in tests, never a bare click: saving is asynchronous (TESTING.md, "Known pitfalls").
 - When P1-03 lands, its strict xfail test will fail the run until its marker is removed. That is intended.
-- Another process may hold port 8000; the tests choose their own port.
-- After removing the last book, the hidden list keeps its old item until the next render. Invisible; harmless.
 - `agent-template/` is the upstream framework copy; leave it alone (AGENTS.md, "Protected areas").
 
 ## Next steps (in order)
 
-1. Maintainer: merge PR #2 (P1-05), then this one (P4-01); check that the first CI run passes.
-2. Maintainer: run `python3 tools/record_fixtures.py` and `LIVE=1` from your own network (P4-04).
+1. Maintainer: merge #2, #3, and this pull request in that order; check that CI passes on each.
+2. Maintainer: try a search on the deployed site (Q-004).
 3. P1-03: make CSV export formula-safe; remove the xfail marker.
 4. P1-04: drop the "in-memory" and "zero-dependency" wording.
 
@@ -86,6 +84,24 @@ oldest to `docs/archive/` and leave a pointer here.
 **Left undone:**
 **Next session should start with:**
 ```
+
+### Session 5: 2026-10-03: switch to Open Library
+
+**Contributor:** Claude Code (Opus 5.5), for gordonk
+**Goal:** P4-04 (record real fixtures), which turned into P1-06
+**Done:** P1-06, P4-04
+**Changed:** `index.html` search now calls Open Library (`bookFromEdition()`, `bookFromWork()`); fixtures moved to
+`tests/fixtures/open_library/`, four recorded and three synthetic; `tools/record_fixtures.py` and the live tests
+target Open Library; docs updated
+**Decisions:** D-008 (supersedes D-002); D-007 updated in place
+**Verified:** 36 passed, three runs; live 4/4 against openlibrary.org; two mutation checks caught
+**Not verified:** the deployed site; earlier mutation checks not rerun on the new search code
+**Problems / surprises:** the maintainer's terminal is on the same machine as the agent, so "try from your network"
+could not help
+**Corrections:** sessions 2 to 4 called Google's 429 a rate limit, and session 4's summary blamed this machine's IP.
+Both were wrong: the reply body shows a daily quota of 0 for all keyless requests (D-008)
+**Left undone:** P1-03, P1-04
+**Next session should start with:** P1-03, once #2, #3, and this pull request are merged
 
 ### Session 4: 2026-10-03: automated end-to-end tests
 

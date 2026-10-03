@@ -1,0 +1,12 @@
+{
+  "numFound": 1,
+  "docs": [
+    {
+      "title": "<img src=x onerror=\"window.__pwned = (window.__pwned || 0) + 1\">",
+      "author_name": ["=HYPERLINK(\"http://example.invalid\",\"click\")", "<b>Bold</b> & 'Quoted'"],
+      "first_publish_year": 2001,
+      "isbn": ["<svg onload=\"window.__pwned = 1\">"],
+      "number_of_pages_median": 1
+    }
+  ]
+}

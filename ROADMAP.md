@@ -34,6 +34,11 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
   HTTP error names its status. Evidence: stubbed 429, 503, empty, found, and network-failure replies each gave the
   right message; a live search here (429) showed the new message; with the fix stashed, the 429 said "No books found"
   and `978&q=x#y` leaked into the URL unencoded. Chromium (built-in browser), 2026-10-03
+- [x] P1-06 Search was broken for everyone: Google Books gives keyless requests a quota of 0 per day. Found while
+  trying to record fixtures (P4-04), from the 429 body (2026-10-03). Done (D-008): lookups go to Open Library (Books
+  API for ISBNs, search for title and author). Evidence: 38 end-to-end tests pass on recorded Open Library replies in
+  Chromium and Firefox; the live tests passed 4/4 against openlibrary.org; the old Google code fails 14 tests
+  (2026-10-03)
 
 ## Phase 2: Core experience
 
@@ -64,9 +69,10 @@ Goal: managing a ledger is quick and forgiving.
 - [x] P4-03 Replace the inline `onclick="removeBook(...)"` with an event listener so a Content-Security-Policy can
   forbid inline handlers. Done with P1-02, which needed it (2026-10-03). The Tailwind CDN script still stands
   in the way of a strict policy.
-- [ ] P4-04 Replace the three synthetic Google Books fixtures with recorded replies: run `tools/record_fixtures.py`
+- [x] P4-04 Replace the three synthetic Google Books fixtures with recorded replies: run `tools/record_fixtures.py`
   from a network Google is not rate-limiting, then rerun the suite. Needs the maintainer's network: Google answered
-  429 from the agent's (2026-10-03)
+  429 from the agent's (2026-10-03). The maintainer's run also got 429, which exposed P1-06. Done with P1-06: four
+  Open Library replies recorded by the agent (2026-10-03); two fixtures stay synthetic by design
 
 ## Phase 5: Later: other media and offline
 

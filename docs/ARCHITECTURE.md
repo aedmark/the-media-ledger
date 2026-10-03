@@ -10,8 +10,9 @@ Why things are this way lives in [DECISIONS.md](DECISIONS.md); this file says *w
 
 The browser loads `index.html`, which pulls Tailwind (CDN script) and the Inter font (Google Fonts) and runs one
 inline `<script>`. On load the script opens IndexedDB `LibraryLedgerDB` (version 1, store `books`) and renders every
-saved book. A search builds a Google Books query (`isbn:` or `intitle:`/`inauthor:`), fetches
-`https://www.googleapis.com/books/v1/volumes`, takes the first result, and shows it as the *staged book*. "Commit to
+saved book. A search asks Open Library: an ISBN goes to the Books API (`/api/books`, one edition), a title and
+author to `/search.json` (works, first result). `bookFromEdition()` or `bookFromWork()` turns the reply into a book
+record, shown as the *staged book*. "Commit to
 Ledger" writes it to IndexedDB and the in-memory `ledger` array; the bin icon deletes it; "Export CSV" builds a CSV
 from the array and downloads it. Nothing else leaves the device.
 
@@ -22,7 +23,7 @@ Everything is in `index.html`; these are the functions and handlers inside its `
 | Area | Where | Entry point | Talks to |
 | --- | --- | --- | --- |
 | Storage setup | `index.html`, top of script | `indexedDB.open(...)`, `loadLedger()` | IndexedDB |
-| Search | `index.html` | `form` submit handler | Google Books API; `stageBook()` |
+| Search | `index.html` | `form` submit handler | Open Library; `bookFromEdition()`, `bookFromWork()`; `stageBook()` |
 | Staging | `index.html` | `stageBook(book)` | the DOM |
 | Saving | `index.html` | `saveBtn` click handler | IndexedDB; `updateLedgerUI()` |
 | Ledger list | `index.html` | `updateLedgerUI()` | the DOM |
@@ -34,7 +35,7 @@ Everything is in `index.html`; these are the functions and handlers inside its `
 ## Interfaces and data flow
 
 ```text
-form input -> Google Books query -> first volume -> staged book -> IndexedDB "books" + ledger[] -> list / CSV
+form input -> Open Library (edition or first work) -> book record -> staged book -> IndexedDB "books" + ledger[] -> list / CSV
 ```
 
 | Interface | Producer | Consumer | Contract / compatibility |
@@ -42,7 +43,8 @@ form input -> Google Books query -> first volume -> staged book -> IndexedDB "bo
 | Book record | search handler | IndexedDB, list, CSV | `{id: string (Date.now()), title, author, isbn ('N/A' if none), publishedYear (4 chars or 'Unknown'), pages (number or 'Unknown')}`; changing it needs a migration (D-003) |
 | IndexedDB `LibraryLedgerDB` v1 | `onupgradeneeded` | `loadLedger()` and handlers | store `books`, `keyPath: "id"`; no indexes |
 | CSV export | export handler | the user's spreadsheet | header `Title,Author,ISBN,Published Year,Pages`; every cell double-quoted |
-| Google Books volumes | Google | search handler | uses `items[0].volumeInfo` only; no API key (D-002) |
+| Open Library Books API | Open Library | search handler | `{"ISBN:<isbn>": edition}` or `{}`; uses title, authors[].name, publish_date, number_of_pages, identifiers; no key (D-008) |
+| Open Library search | Open Library | search handler | `docs[0]` with the requested `fields`; a work, not an edition (D-008) |
 
 ## Invariants
 
@@ -51,7 +53,7 @@ Rules that hold everywhere and that a change must not break. Each names what enf
 - Every write to the ledger goes to IndexedDB first, and `ledger[]` changes only in the request's `onsuccess`.
   Enforced by: nothing yet (P4-01).
 - Nothing but the search query leaves the device. Enforced by: nothing yet; review any new `fetch` (SECURITY.md).
-- Text from Google Books or storage is rendered as text, never as HTML: interpolated into `innerHTML` only
+- Text from Open Library or storage is rendered as text, never as HTML: interpolated into `innerHTML` only
   through `escapeHTML()`, and never into inline event handlers. Enforced by: nothing automated (P4-01); manual
   injection checks in TESTING.md (P1-02).
 
@@ -60,7 +62,7 @@ Rules that hold everywhere and that a change must not break. Each names what enf
 | Boundary | Comes in as | Checked by | Rule |
 | --- | --- | --- | --- |
 | Form fields | strings | trimmed (ISBN: `-` and spaces stripped); every value `encodeURIComponent` | encode before putting into a URL (P1-05) |
-| Google Books reply | JSON | only `totalItems`/`items` presence | every string escaped with `escapeHTML()` before display (P1-02) |
+| Open Library reply | JSON | only the presence of the edition or `docs` | every string escaped with `escapeHTML()` before display (P1-02) |
 | Stored records | objects from IndexedDB | nothing | same as the API reply: they came from it |
 | CSV cells | strings | quotes doubled | must not start a formula (P1-03) |
 
@@ -74,7 +76,7 @@ Record it here, pinned, the same session.
 | Tailwind CSS Play CDN | unpinned (`cdn.tailwindcss.com`) | all styling | no build step (D-001); Tailwind marks the Play CDN as not for production, so pinning or a built stylesheet is a candidate proposal |
 | Inter (Google Fonts) | weights 300, 400, 600, 800 | typography | appearance only; the page falls back to sans-serif |
 | pytest, pytest-playwright, Playwright (development only) | pinned in `requirements-dev.txt` | `tests/` | drive real browsers headless; Python matches the existing tooling (D-007) |
-| Google Books API v1 | v1 | book lookup | free, CORS-enabled, no key needed (D-002) |
+| Open Library APIs | unversioned | book lookup | free, keyless, CORS-enabled; Google's keyless quota is 0 (D-008) |
 
 ## State and caches
 
@@ -84,7 +86,7 @@ Record it here, pinned, the same session.
 | Exported CSV | the user's downloads folder | the export button | the user | no |
 | Development virtualenv | `.venv/` | `pip install -r requirements-dev.txt` | delete the folder | no, gitignored |
 | Playwright browsers (about 650 MB) | `~/.cache/ms-playwright/`, shared between projects | `playwright install` | by hand only; other projects may use them | no |
-| Test fixtures | `tests/fixtures/google_books/` | by hand or `tools/record_fixtures.py` | re-recording overwrites three of them | yes |
+| Test fixtures | `tests/fixtures/open_library/` | by hand or `tools/record_fixtures.py` | re-recording overwrites four of them | yes |
 
 ## Failure modes and observability
 
@@ -92,8 +94,8 @@ Record it here, pinned, the same session.
 | --- | --- | --- | --- |
 | IndexedDB unavailable or blocked | error toast "Failed to connect to local database"; saving then throws because `db` is undefined | console error | none; the user must allow site storage |
 | Network down | toast "Network error while communicating with the API." | console error | retry |
-| Google Books rate limit (429) | toast says searches are being limited; try again in a minute | `console.error` with the status | wait; anonymous quota (D-002) |
-| Other Google Books HTTP error | toast names the HTTP status | `console.error` with the status | retry later |
+| Open Library rate limit (429) | toast says searches are being limited; try again in a minute | `console.error` with the status | wait |
+| Other Open Library HTTP error | toast names the HTTP status | `console.error` with the status | retry later |
 | Tailwind CDN unreachable | page renders unstyled but works | none | none |
 
 Logging is `console.error` only; it may include API error objects but never contains secrets (there are none).
@@ -101,6 +103,8 @@ Logging is `console.error` only; it may include API error objects but never cont
 ## Claims vs. code
 
 - The ledger subtitle says "In-memory session storage"; data actually persists in IndexedDB (P1-04).
-- The page title says "Zero-Dependency Book Tracker"; it depends on two CDNs and the Google Books API (P1-04).
+- The page title says "Zero-Dependency Book Tracker"; it depends on two CDNs and Open Library (P1-04).
+- A title search saves the ISBN of one edition of the work and the work's first publication year, not the details of
+  a particular copy (D-008).
 - Vercel builds preview deployments for pull requests, but no file here configures it; production is unknown (Q-004).
 - The repository is called `the-media-ledger`, but only books are supported so far (D-006, P5-01).

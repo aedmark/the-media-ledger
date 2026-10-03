@@ -1,0 +1,17 @@
+{
+  "ISBN:9780439708180": {
+    "title": "Harry Potter and the sorcerer's stone",
+    "authors": [
+      {
+        "name": "J. K. Rowling"
+      }
+    ],
+    "publish_date": "1999",
+    "number_of_pages": 784,
+    "identifiers": {
+      "isbn_13": [
+        "9780439708180"
+      ]
+    }
+  }
+}

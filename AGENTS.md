@@ -1,7 +1,7 @@
 # Library Ledger
 
 Library Ledger (repository: `the-media-ledger`) is a personal book tracker that runs entirely in the browser. A user
-looks a book up by ISBN or by title and author through the public Google Books API, saves it to a ledger kept in the
+looks a book up by ISBN or by title and author through the public Open Library API, saves it to a ledger kept in the
 browser's IndexedDB, and can export the ledger as CSV. It is one static `index.html` with inline JavaScript: no build
 step, no server, no account.
 
@@ -28,7 +28,7 @@ these instructions or the working tree contains overlapping edits, stop and ask 
 - Update documentation in the same change when behaviour, interfaces, commands, risks, or project structure change.
 - Distinguish observed facts from inference. Include the command, date, browser, or source behind volatile claims.
 - Prefer enforcement to prose: important invariants should have a test or runtime check.
-- Treat every Google Books response and every stored record as untrusted text: never insert it with `innerHTML`
+- Treat every Open Library response and every stored record as untrusted text: never insert it with `innerHTML`
   unescaped (see `docs/SECURITY.md`). Never put an API key in the repository.
 - Add newly discovered work to `ROADMAP.md` only when it is genuinely out of scope for the current change.
 
@@ -110,8 +110,8 @@ Things an agent must not change without explicit permission. Every rule includes
 | `docs/CHANGELOG.md` | User-visible release notes |
 | `docs/archive/` | Historical material no longer current |
 | `tools/check_docs.py` | Documentation consistency checks |
-| `tools/record_fixtures.py` | Records real Google Books replies into the test fixtures |
-| `tests/` | End-to-end tests (`test_app.py`), the opt-in live test, and Google Books fixtures |
+| `tools/record_fixtures.py` | Records real Open Library replies into the test fixtures |
+| `tests/` | End-to-end tests (`test_app.py`), the opt-in live tests, and Open Library fixtures |
 | `pytest.ini` | Test settings: which browsers run by default |
 | `requirements-dev.txt` | Pinned test tools (D-007) |
 | `.github/workflows/tests.yml` | CI: docs check and tests on pull requests and `main` |
@@ -125,8 +125,8 @@ Things an agent must not change without explicit permission. Every rule includes
   stored fields and shared helpers (D-006).
 - Supported: current desktop and mobile versions of Chrome, Firefox, and Safari. Not supported: Internet Explorer,
   browsers without IndexedDB.
-- Book data comes only from the Google Books volumes endpoint, without an API key (D-002).
-- Data stays on the device. Nothing is sent anywhere except the search query to Google Books.
+- Book data comes only from Open Library (`/api/books` for ISBNs, `/search.json` for titles), without a key (D-008).
+- Data stays on the device. Nothing is sent anywhere except the search query to Open Library.
 - Stored records keep the shape `{id, title, author, isbn, publishedYear, pages}`; a change needs a migration (D-003).
 - No generated files are committed.
 - New behaviour gets an end-to-end test in `tests/test_app.py`; tests never touch the real network (D-007).
@@ -135,8 +135,8 @@ Things an agent must not change without explicit permission. Every rule includes
 
 | Environment | Can access | Cannot access / caveats |
 | --- | --- | --- |
-| Local development | Any browser; `python3 -m http.server` for a local origin; the Google Books API over the network | IndexedDB is per origin: data saved under `file://` is not visible at `http://localhost:8000` |
-| Agent sandbox | Python 3, `.venv` with the test tools, cached Playwright Chromium and Firefox; possibly the built-in browser | Google Books answered 429 to every request (2026-10-03): rely on the fixtures |
+| Local development | Any browser; `python3 -m http.server` for a local origin; Open Library over the network | IndexedDB is per origin: data saved under `file://` is not visible at `http://localhost:8000` |
+| Agent sandbox | Python 3, `.venv` with the test tools, cached Playwright Chromium and Firefox; possibly the built-in browser | Open Library reachable (2026-10-03); prefer the fixtures, and run live tests sparingly |
 | CI (GitHub Actions) | Ubuntu, Python 3.13, Playwright Chromium and Firefox | No network use by the tests; no secrets |
 | Vercel | Preview deployment per pull request | Configured outside the repository; production unknown (Q-004) |
 

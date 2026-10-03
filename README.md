@@ -2,7 +2,7 @@
 
 A small book tracker that lives in one HTML file. Look a book up by ISBN or by title and author, save it to your
 ledger, and export the ledger as a CSV spreadsheet. Your ledger is stored in your browser (IndexedDB) and never
-leaves your device; only the search itself goes to the Google Books API.
+leaves your device; only the search itself goes to [Open Library](https://openlibrary.org).
 
 ## Run it
 
