@@ -21,7 +21,7 @@ fix before public disclosure.
 | Asset or boundary | Sensitivity / threat | Protection and validation | Owner |
 | --- | --- | --- | --- |
 | The user's ledger | Reading habits are personal; script injection could read or wipe it | Stays in the browser's IndexedDB; nothing uploads it | storage code |
-| Google Books reply | Untrusted text rendered into the page: script injection (stored, since it is saved) | **None today**: `stageBook()` and `updateLedgerUI()` use `innerHTML` with raw fields (P1-02) | rendering code |
+| Google Books reply | Untrusted text rendered into the page: script injection (stored, since it is saved) | `escapeHTML()` on every field in `stageBook()` and `updateLedgerUI()`; no inline handlers (P1-02) | rendering code |
 | Search query | Disclosed to Google | Inherent to D-002; documented in README | search handler |
 | CSV export | Formula injection when opened in a spreadsheet | Quotes doubled; formulas not neutralised (P1-03) | export handler |
 | CDN scripts | A compromised CDN runs code with full page access | Unpinned, no Subresource Integrity; pin with the next dependency proposal (D-004) | maintainer |
@@ -35,7 +35,7 @@ Architecture details belong in [ARCHITECTURE.md](ARCHITECTURE.md); this table re
 - Render external or stored text with `textContent` or an escaping helper, never by interpolating into `innerHTML`.
 - Encode values for their destination: `encodeURIComponent` for URLs, formula-safe quoting for CSV.
 - Any new outbound request or new third-party script needs maintainer approval and an entry in ARCHITECTURE.md.
-- Prefer event listeners over inline `onclick` attributes so a Content-Security-Policy stays possible (P4-03).
+- Prefer event listeners over inline `onclick` attributes so a Content-Security-Policy stays possible (P4-03, done).
 
 ## Security verification
 

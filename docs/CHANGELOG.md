@@ -11,3 +11,6 @@ it to the version tag and date and start a new section. The version bump itself 
 ### Added
 - Look up books by ISBN or by title and author, save them to a ledger kept in your browser, remove them, and export
   the ledger as CSV.
+
+### Fixed
+- Book details containing HTML could run script in the page; they are now always shown as plain text.

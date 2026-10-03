@@ -16,9 +16,12 @@ Goal: the existing app is safe, truthful about itself, and documented well enoug
 - [x] P1-01 Adopt the agent project template: AGENTS, roadmap, handoff, architecture, decisions, testing, security,
   contributing, changelog, and `tools/check_docs.py`. Evidence: `python3 tools/check_docs.py` reports 0 errors
   (2026-10-03)
-- [ ] P1-02 Escape book fields before rendering. Titles, authors, and other Google Books text go into `innerHTML`
-  unescaped in `stageBook()` and `updateLedgerUI()`. Done when a title containing `<img src=x onerror=alert(1)>`
-  renders as text. Found by code reading during P1-01 (2026-10-03)
+- [x] P1-02 Escape book fields before rendering. Titles, authors, and other Google Books text went into `innerHTML`
+  unescaped in `stageBook()` and `updateLedgerUI()`. Found by code reading during P1-01 (2026-10-03). Done: every
+  field goes through `escapeHTML()`; the remove button uses a listener, because an id inside an inline `onclick`
+  string cannot be made safe by HTML escaping (that also finished P4-03). Evidence: a stored record with
+  `<img onerror>` in every field and a quote-breaking id rendered as text and executed nothing; with the fix
+  stashed, the same check executed the payload. Chromium (built-in browser), 2026-10-03
 - [ ] P1-03 Guard CSV export against spreadsheet formula injection: prefix cells beginning with `=`, `+`, `-`, `@`
   with `'`. Done when such a title opens as text in a spreadsheet. Found by code reading (2026-10-03)
 - [ ] P1-04 Make the UI's claims true: the ledger subtitle says "In-memory session storage" but data persists in
@@ -49,8 +52,9 @@ Goal: managing a ledger is quick and forgiving.
   the manual smoke steps in `docs/TESTING.md` are automated and a deliberately broken save fails it.
 - [ ] P4-02 Accessibility pass: the remove button has only a `title`, toasts are not announced to screen readers, and
   keyboard focus is unchecked.
-- [ ] P4-03 Replace the inline `onclick="removeBook(...)"` with an event listener so a Content-Security-Policy can
-  forbid inline handlers.
+- [x] P4-03 Replace the inline `onclick="removeBook(...)"` with an event listener so a Content-Security-Policy can
+  forbid inline handlers. Done with P1-02, which needed it (2026-10-03). The Tailwind CDN script still stands
+  in the way of a strict policy.
 
 ## Phase 5: Later: other media and offline
 

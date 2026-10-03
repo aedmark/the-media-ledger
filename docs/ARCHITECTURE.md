@@ -29,6 +29,7 @@ Everything is in `index.html`; these are the functions and handlers inside its `
 | Removing | `index.html` | `window.removeBook(id)` | IndexedDB; `updateLedgerUI()` |
 | Export | `index.html` | `exportBtn` click handler | a Blob download |
 | Notifications | `index.html` | `showToast(message, type)` | the DOM |
+| Escaping | `index.html` | `escapeHTML(value)` | used by staging and the ledger list |
 
 ## Interfaces and data flow
 
@@ -50,14 +51,16 @@ Rules that hold everywhere and that a change must not break. Each names what enf
 - Every write to the ledger goes to IndexedDB first, and `ledger[]` changes only in the request's `onsuccess`.
   Enforced by: nothing yet (P4-01).
 - Nothing but the search query leaves the device. Enforced by: nothing yet; review any new `fetch` (SECURITY.md).
-- Text from Google Books or storage is rendered as text, never as HTML. **Currently broken** (P1-02).
+- Text from Google Books or storage is rendered as text, never as HTML: interpolated into `innerHTML` only
+  through `escapeHTML()`, and never into inline event handlers. Enforced by: nothing automated (P4-01); manual
+  injection checks in TESTING.md (P1-02).
 
 ## Boundaries
 
 | Boundary | Comes in as | Checked by | Rule |
 | --- | --- | --- | --- |
 | Form fields | strings | trimmed; title/author `encodeURIComponent`, ISBN only strips `-` and spaces | encode before putting into a URL (P1-05) |
-| Google Books reply | JSON | only `totalItems`/`items` presence | treat every string as untrusted; escape before display (P1-02) |
+| Google Books reply | JSON | only `totalItems`/`items` presence | every string escaped with `escapeHTML()` before display (P1-02) |
 | Stored records | objects from IndexedDB | nothing | same as the API reply: they came from it |
 | CSV cells | strings | quotes doubled | must not start a formula (P1-03) |
 

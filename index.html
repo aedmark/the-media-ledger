@@ -265,12 +265,22 @@
             }
         });
 
+        // Book fields come from Google Books or from storage: escape them before they go into innerHTML.
+        function escapeHTML(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function stageBook(book) {
             stagedDetails.innerHTML = `
-                <p><span class="text-slate-400">Title:</span> <span class="font-medium text-white">${book.title}</span></p>
-                <p><span class="text-slate-400">Author:</span> <span class="text-slate-200">${book.author}</span></p>
-                <p><span class="text-slate-400">ISBN:</span> <span class="text-slate-200">${book.isbn}</span></p>
-                <p><span class="text-slate-400">Year:</span> <span class="text-slate-200">${book.publishedYear}</span></p>
+                <p><span class="text-slate-400">Title:</span> <span class="font-medium text-white">${escapeHTML(book.title)}</span></p>
+                <p><span class="text-slate-400">Author:</span> <span class="text-slate-200">${escapeHTML(book.author)}</span></p>
+                <p><span class="text-slate-400">ISBN:</span> <span class="text-slate-200">${escapeHTML(book.isbn)}</span></p>
+                <p><span class="text-slate-400">Year:</span> <span class="text-slate-200">${escapeHTML(book.publishedYear)}</span></p>
             `;
             stagingArea.classList.remove('hidden');
         }
@@ -324,13 +334,15 @@
                 
                 li.innerHTML = `
                     <div>
-                        <h4 class="font-bold text-slate-800">${book.title}</h4>
-                        <p class="text-sm text-slate-500">${book.author} &bull; ${book.publishedYear} &bull; ISBN: ${book.isbn}</p>
+                        <h4 class="font-bold text-slate-800">${escapeHTML(book.title)}</h4>
+                        <p class="text-sm text-slate-500">${escapeHTML(book.author)} &bull; ${escapeHTML(book.publishedYear)} &bull; ISBN: ${escapeHTML(book.isbn)}</p>
                     </div>
-                    <button onclick="removeBook('${book.id}')" class="text-red-400 hover:text-red-600 p-2 transition-colors" title="Remove">
+                    <button class="text-red-400 hover:text-red-600 p-2 transition-colors" title="Remove">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 `;
+                // A listener, not an inline onclick: the id is stored data and must never be parsed as script.
+                li.querySelector('button').addEventListener('click', () => removeBook(book.id));
                 ledgerList.appendChild(li);
             });
         }
